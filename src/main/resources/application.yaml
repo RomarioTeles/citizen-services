@@ -48,6 +48,12 @@ info:
     name: ${spring.application.name}
     version: 0.0.1-SNAPSHOT
 
+logging:
+  structured:
+    format:
+      console: ecs
+  include-application-name: true
+
 springdoc:
   api-docs:
     path: /v3/api-docs

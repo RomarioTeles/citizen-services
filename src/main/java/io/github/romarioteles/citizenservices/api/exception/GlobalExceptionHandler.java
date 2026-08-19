@@ -3,6 +3,8 @@ package io.github.romarioteles.citizenservices.api.exception;
 import io.github.romarioteles.citizenservices.api.dto.ApiErrorResponse;
 import io.github.romarioteles.citizenservices.service.application.exception.ServiceNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -16,9 +18,14 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
     @ExceptionHandler(ServiceNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ApiErrorResponse handleServiceNotFound(ServiceNotFoundException ex, HttpServletRequest request) {
+        log.atWarn()
+                .addKeyValue("path", request.getRequestURI())
+                .log(ex.getMessage());
         return ApiErrorResponse.of(
                 HttpStatus.NOT_FOUND.value(),
                 HttpStatus.NOT_FOUND.name(),
@@ -60,6 +67,10 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ApiErrorResponse handleGeneric(Exception ex, HttpServletRequest request) {
+        log.atError()
+                .addKeyValue("path", request.getRequestURI())
+                .setCause(ex)
+                .log("Unexpected internal error");
         return ApiErrorResponse.of(
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 HttpStatus.INTERNAL_SERVER_ERROR.name(),

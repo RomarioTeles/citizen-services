@@ -9,6 +9,9 @@ management:
           show-details: always
 
 logging:
+  structured:
+    format:
+      console: none
   level:
     io.github.romarioteles.citizenservices: DEBUG
 
