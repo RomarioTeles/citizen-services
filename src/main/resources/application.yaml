@@ -1,6 +1,12 @@
 spring:
   application:
     name: ${APP_NAME:citizen-services}
+  data:
+    web:
+      pageable:
+        default-page-size: 10
+        max-page-size: 100
+        one-indexed-parameters: false
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/citizenservices}
     username: ${DB_USERNAME:citizen}
