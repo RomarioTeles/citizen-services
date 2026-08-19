@@ -16,6 +16,8 @@ Platform for digital citizen services, built as a modular monolith designed to e
 - Maven
 - JUnit 5
 - Docker
+- Prometheus
+- Grafana
 
 ---
 
@@ -103,7 +105,7 @@ PostgreSQL data is stored in the `postgres_data` Docker volume. This means data 
 
 ## Running with Docker
 
-Build and start the full application (requires `--profile infra` to include PostgreSQL):
+Build and start the full application (requires `--profile infra` to include PostgreSQL, Prometheus and Grafana):
 
 ```bash
 docker compose --profile infra up --build
@@ -119,7 +121,7 @@ The application will be available at `http://localhost:8080`.
 
 ---
 
-## localhost vs postgres (container networking)
+## localhost vs container networking
 
 When running outside Docker, the application connects to PostgreSQL via:
 
@@ -127,13 +129,11 @@ When running outside Docker, the application connects to PostgreSQL via:
 jdbc:postgresql://localhost:5432/citizenservices
 ```
 
-When running inside Docker Compose, containers communicate through Docker's internal network. In this context, `localhost` refers to the container itself — not the PostgreSQL container. The correct hostname is the **service name** defined in `docker-compose.yml`:
+When running inside Docker Compose, containers communicate through Docker's internal network. In this context, `localhost` refers to the container itself — not another container. The correct hostname is the **service name** defined in `docker-compose.yml`.
 
-```
-jdbc:postgresql://postgres:5432/citizenservices
-```
-
-This is why `DB_URL` is overridden in the `app` service environment to use `postgres` as the hostname.
+This is why:
+- `DB_URL` uses `postgres` as the hostname
+- Prometheus scrapes the application via `app:8080`, not `localhost:8080`
 
 ---
 
@@ -158,26 +158,32 @@ This is why `DB_URL` is overridden in the `app` service environment to use `post
 ### Architecture
 
 ```
-                Citizen Services
-                       │
-                       ▼
-                  Actuator
-                       │
-         ┌─────────────┼─────────────┐
-         ▼             ▼             ▼
-      Health        Metrics        Info
-         │             │
-   ┌─────┴─────┐       │
-   ▼           ▼       ▼
-Liveness  Readiness  Micrometer
-               │
-               ▼
-           PostgreSQL
+            Citizen Services
+                   │
+                   ▼
+              Actuator
+                   │
+     ┌─────────────┼──────────────┐
+     ▼             ▼              ▼
+  Health        Metrics         Info
+     │             │
+┌────┴────┐        │
+▼         ▼        ▼
+Liveness Readiness Micrometer
+              │
+              ▼
+     Prometheus Registry
+              │
+              ▼ /actuator/prometheus
+         Prometheus
+              │
+              ▼
+           Grafana
 ```
 
-Metrics are produced by **Micrometer**, the vendor-neutral metrics facade bundled with Spring Boot Actuator.
-In a future increment, a Prometheus registry will be added so that Micrometer exports metrics in the
-Prometheus scrape format, enabling Grafana dashboards.
+Metrics are produced by **Micrometer** and exported in the Prometheus scrape format via `/actuator/prometheus`.
+**Prometheus** collects (scrapes) those metrics every 15 seconds.
+**Grafana** connects to Prometheus as a data source and visualizes the metrics in dashboards.
 
 ---
 
@@ -279,6 +285,40 @@ Returns details for a specific metric. Examples:
 | `/actuator/metrics/system.cpu.usage` | System CPU usage |
 | `/actuator/metrics/hikaricp.connections.active` | Active HikariCP datasource connections |
 
+### Prometheus
+
+```
+GET /actuator/prometheus
+```
+
+Exposes all Micrometer metrics in the Prometheus text format. Scraped automatically by the Prometheus container every 15 seconds.
+
+Business metrics exported:
+
+| Prometheus metric | Description |
+|---|---|
+| `citizen_services_registrations_total` | Total services successfully created |
+| `citizen_services_consulted_total` | Total successful lookups by ID |
+| `citizen_services_not_found_total` | Total lookups by ID that returned 404 |
+
+### Grafana
+
+Grafana is available at `http://localhost:3000` (credentials: `admin` / `admin`).
+
+The **Citizen Services** dashboard is provisioned automatically and includes:
+
+| Panel | Metric |
+|---|---|
+| Serviços Cadastrados | `citizen_services_registrations_total` |
+| Consultas por ID | `citizen_services_consulted_total` |
+| Consultas Não Encontradas | `citizen_services_not_found_total` |
+| Memória JVM heap | `jvm_memory_used_bytes` |
+| Requisições HTTP | `http_server_requests_seconds_count` |
+| Conexões HikariCP | `hikaricp_connections_active/idle` |
+| Threads JVM | `jvm_threads_live/daemon` |
+
+The Prometheus data source is also provisioned automatically — no manual configuration required.
+
 ### Info
 
 ```
@@ -321,23 +361,61 @@ Flyway runs automatically on application startup and records applied migrations 
 ```
 src/main/java/io/github/romarioteles/citizenservices/
 ├── CitizenServicesApplication.java
-└── controller/
-    └── HealthController.java
+├── api/
+│   ├── dto/
+│   │   └── ApiErrorResponse.java
+│   └── exception/
+│       └── GlobalExceptionHandler.java
+├── config/
+│   └── OpenApiConfig.java
+├── controller/
+│   └── HealthController.java
+├── infrastructure/
+│   └── observability/
+│       ├── CorrelationIdFilter.java
+│       └── HttpRequestLoggingFilter.java
+└── service/
+    ├── api/
+    │   ├── dto/
+    │   │   ├── CreateServiceRequest.java
+    │   │   ├── ServicePageResponse.java
+    │   │   ├── ServiceResponse.java
+    │   │   └── UpdateServiceRequest.java
+    │   └── ServiceController.java
+    ├── application/
+    │   ├── exception/
+    │   │   └── ServiceNotFoundException.java
+    │   ├── metrics/
+    │   │   └── ServiceMetrics.java
+    │   └── ServiceApplicationService.java
+    ├── domain/
+    │   └── CitizenService.java
+    └── repository/
+        └── ServiceRepository.java
 
 src/main/resources/
-├── application.yaml            # Common configuration for all environments
-├── application-dev.yaml        # Development-specific configuration
+├── application.yaml
+├── application-dev.yaml
 └── db/
     └── migration/
-        └── V1__baseline.sql    # Initial Flyway migration
-```
+        ├── V1__baseline.sql
+        └── V2__create_services_table.sql
 
-Packages `config`, `repository`, `domain`, and `infrastructure` will be added incrementally as features are implemented.
+prometheus/
+└── prometheus.yml
+
+grafana/
+├── provisioning/
+│   ├── datasources/
+│   │   └── prometheus.yml
+│   └── dashboards/
+│       └── provider.yml
+└── dashboards/
+    └── citizen-services.json
+```
 
 ---
 
 ## Domain
 
-The first business resource has been introduced:
-
-- `Service` — represents a service offered to citizens (e.g. document reissuance, benefit inquiry).
+- `CitizenService` — represents a service offered to citizens (e.g. document reissuance, benefit inquiry).
