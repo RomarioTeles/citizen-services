@@ -12,7 +12,7 @@ public class ServiceMetrics {
     private final Counter notFound;
 
     public ServiceMetrics(MeterRegistry registry) {
-        this.created   = Counter.builder("citizen.services.created").register(registry);
+        this.created   = Counter.builder("citizen.services.registrations").register(registry);
         this.consulted = Counter.builder("citizen.services.consulted").register(registry);
         this.notFound  = Counter.builder("citizen.services.not_found").register(registry);
     }

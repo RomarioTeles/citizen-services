@@ -28,7 +28,7 @@ class ServiceMetricsTest {
 
     @Test
     void shouldIncrementCreatedCounterOnCreate() {
-        Counter counter = registry.counter("citizen.services.created");
+        Counter counter = registry.counter("citizen.services.registrations");
         double before = counter.count();
 
         service.create(new CreateServiceRequest("Serviço Métricas Criação", null));
