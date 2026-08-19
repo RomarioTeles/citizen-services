@@ -244,4 +244,12 @@ src/main/resources/
         └── V1__baseline.sql    # Initial Flyway migration
 ```
 
-Packages `config`, `service`, `repository`, `domain`, and `infrastructure` will be added incrementally as features are implemented.
+Packages `config`, `repository`, `domain`, and `infrastructure` will be added incrementally as features are implemented.
+
+---
+
+## Domain
+
+The first business resource has been introduced:
+
+- `Service` — represents a service offered to citizens (e.g. document reissuance, benefit inquiry).
