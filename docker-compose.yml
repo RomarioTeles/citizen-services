@@ -6,21 +6,30 @@ services:
     environment:
       SERVER_PORT: ${SERVER_PORT:-8080}
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-}
+      DB_URL: jdbc:postgresql://postgres:5432/citizenservices
+      DB_USERNAME: ${POSTGRES_USER:-citizen}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-citizen}
+    depends_on:
+      postgres:
+        condition: service_healthy
 
-  # PostgreSQL será ativado nos próximos incrementos, quando JPA for configurado.
-  # Para subir: docker compose --profile infra up
   postgres:
     image: postgres:16-alpine
     profiles:
       - infra
     environment:
-      POSTGRES_DB: citizenservices
-      POSTGRES_USER: citizen
-      POSTGRES_PASSWORD: citizen
+      POSTGRES_DB: ${POSTGRES_DB:-citizenservices}
+      POSTGRES_USER: ${POSTGRES_USER:-citizen}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-citizen}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-citizen} -d ${POSTGRES_DB:-citizenservices}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:

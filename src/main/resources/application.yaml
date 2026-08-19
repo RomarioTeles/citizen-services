@@ -1,6 +1,17 @@
 spring:
   application:
     name: ${APP_NAME:citizen-services}
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/citizenservices}
+    username: ${DB_USERNAME:citizen}
+    password: ${DB_PASSWORD:citizen}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
 
 server:
   port: ${SERVER_PORT:8080}

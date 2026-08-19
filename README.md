@@ -10,6 +10,9 @@ Platform for digital citizen services, built as a modular monolith designed to e
 - Spring Boot 4.x / Spring Framework 7.x
 - Spring MVC
 - Spring Boot Actuator (Micrometer)
+- Spring Data JPA / Hibernate
+- Flyway
+- PostgreSQL
 - Maven
 - JUnit 5
 - Docker
@@ -31,6 +34,8 @@ Platform for digital citizen services, built as a modular monolith designed to e
 ```
 
 The application starts on `http://localhost:8080`.
+
+Requires a running PostgreSQL instance. See [Starting PostgreSQL](#starting-postgresql).
 
 ## Running with dev profile
 
@@ -64,27 +69,71 @@ The JAR will be generated at `target/citizen-services-0.0.1-SNAPSHOT.jar`.
 
 ---
 
-## Running with Docker
+## Starting PostgreSQL
 
-Build and start the application:
+Start only the PostgreSQL container:
 
 ```bash
-docker compose up --build
+docker compose --profile infra up -d postgres
+```
+
+Check status:
+
+```bash
+docker compose ps
+```
+
+Stop and remove containers (data is preserved in the volume):
+
+```bash
+docker compose --profile infra down
+```
+
+Stop and remove containers **and data**:
+
+```bash
+docker compose --profile infra down -v
+```
+
+### About the volume
+
+PostgreSQL data is stored in the `postgres_data` Docker volume. This means data persists across container restarts. Use `-v` only when you want to reset the database completely.
+
+---
+
+## Running with Docker
+
+Build and start the full application (requires `--profile infra` to include PostgreSQL):
+
+```bash
+docker compose --profile infra up --build
 ```
 
 Run with dev profile:
 
 ```bash
-SPRING_PROFILES_ACTIVE=dev docker compose up --build
+SPRING_PROFILES_ACTIVE=dev docker compose --profile infra up --build
 ```
 
 The application will be available at `http://localhost:8080`.
 
-To also start PostgreSQL (for future use):
+---
 
-```bash
-docker compose --profile infra up --build
+## localhost vs postgres (container networking)
+
+When running outside Docker, the application connects to PostgreSQL via:
+
 ```
+jdbc:postgresql://localhost:5432/citizenservices
+```
+
+When running inside Docker Compose, containers communicate through Docker's internal network. In this context, `localhost` refers to the container itself — not the PostgreSQL container. The correct hostname is the **service name** defined in `docker-compose.yml`:
+
+```
+jdbc:postgresql://postgres:5432/citizenservices
+```
+
+This is why `DB_URL` is overridden in the `app` service environment to use `postgres` as the hostname.
 
 ---
 
@@ -95,6 +144,12 @@ docker compose --profile infra up --build
 | `SERVER_PORT` | `8080` | HTTP port the application listens on |
 | `APP_NAME` | `citizen-services` | Application name |
 | `SPRING_PROFILES_ACTIVE` | _(none)_ | Active Spring profiles (e.g. `dev`) |
+| `DB_URL` | `jdbc:postgresql://localhost:5432/citizenservices` | JDBC connection URL |
+| `DB_USERNAME` | `citizen` | Database username |
+| `DB_PASSWORD` | `citizen` | Database password |
+| `POSTGRES_DB` | `citizenservices` | PostgreSQL database name (Docker) |
+| `POSTGRES_USER` | `citizen` | PostgreSQL username (Docker) |
+| `POSTGRES_PASSWORD` | `citizen` | PostgreSQL password (Docker) |
 
 ---
 
@@ -137,6 +192,7 @@ With `dev` profile, response includes component details:
 {
   "status": "UP",
   "components": {
+    "db": { "status": "UP", ... },
     "diskSpace": { "status": "UP", ... },
     "ping": { "status": "UP" }
   }
@@ -154,6 +210,24 @@ With `dev` profile, response includes component details:
 
 ---
 
+## Database migrations
+
+Migrations are managed by Flyway and located at:
+
+```
+src/main/resources/db/migration/
+```
+
+Naming convention:
+
+```
+V{version}__{description}.sql
+```
+
+Flyway runs automatically on application startup and records applied migrations in the `flyway_schema_history` table.
+
+---
+
 ## Project structure
 
 ```
@@ -163,8 +237,11 @@ src/main/java/io/github/romarioteles/citizenservices/
     └── HealthController.java
 
 src/main/resources/
-├── application.yaml         # Common configuration for all environments
-└── application-dev.yaml     # Development-specific configuration
+├── application.yaml            # Common configuration for all environments
+├── application-dev.yaml        # Development-specific configuration
+└── db/
+    └── migration/
+        └── V1__baseline.sql    # Initial Flyway migration
 ```
 
 Packages `config`, `service`, `repository`, `domain`, and `infrastructure` will be added incrementally as features are implemented.
