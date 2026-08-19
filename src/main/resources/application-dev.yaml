@@ -1,0 +1,15 @@
+management:
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    io.github.romarioteles.citizenservices: DEBUG
+
+spring:
+  web:
+    error:
+      include-message: always
+      include-binding-errors: always
+      include-stacktrace: on_param
