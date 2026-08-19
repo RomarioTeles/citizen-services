@@ -25,11 +25,16 @@ class CorrelationIdFilterTest {
     @Autowired
     private ServiceRepository repository;
 
+    @Autowired
+    private CorrelationIdFilter correlationIdFilter;
+
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.webAppContextSetup(context).build();
+        mockMvc = MockMvcBuilders.webAppContextSetup(context)
+                .addFilters(correlationIdFilter)
+                .build();
     }
 
     @Test

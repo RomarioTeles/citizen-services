@@ -1,9 +1,13 @@
 package io.github.romarioteles.citizenservices.actuator;
 
+import io.github.romarioteles.citizenservices.infrastructure.observability.CorrelationIdFilter;
+import io.github.romarioteles.citizenservices.infrastructure.observability.HttpRequestLoggingFilter;
+import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.web.filter.ServerHttpObservationFilter;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
@@ -18,11 +22,22 @@ class ActuatorObservabilityTest {
     @Autowired
     private WebApplicationContext context;
 
+    @Autowired
+    private CorrelationIdFilter correlationIdFilter;
+
+    @Autowired
+    private HttpRequestLoggingFilter httpRequestLoggingFilter;
+
+    @Autowired
+    private ObservationRegistry observationRegistry;
+
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.webAppContextSetup(context).build();
+        mockMvc = MockMvcBuilders.webAppContextSetup(context)
+                .addFilters(new ServerHttpObservationFilter(observationRegistry), correlationIdFilter, httpRequestLoggingFilter)
+                .build();
     }
 
     @Test

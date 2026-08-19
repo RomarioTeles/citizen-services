@@ -5,6 +5,7 @@ import io.github.romarioteles.citizenservices.service.api.dto.ServicePageRespons
 import io.github.romarioteles.citizenservices.service.api.dto.ServiceResponse;
 import io.github.romarioteles.citizenservices.service.api.dto.UpdateServiceRequest;
 import io.github.romarioteles.citizenservices.service.application.exception.ServiceNotFoundException;
+import io.github.romarioteles.citizenservices.service.application.metrics.ServiceMetrics;
 import io.github.romarioteles.citizenservices.service.domain.CitizenService;
 import io.github.romarioteles.citizenservices.service.repository.ServiceRepository;
 import org.springframework.data.domain.Pageable;
@@ -15,22 +16,32 @@ import org.springframework.transaction.annotation.Transactional;
 public class ServiceApplicationService {
 
     private final ServiceRepository repository;
+    private final ServiceMetrics metrics;
 
-    public ServiceApplicationService(ServiceRepository repository) {
+    public ServiceApplicationService(ServiceRepository repository, ServiceMetrics metrics) {
         this.repository = repository;
+        this.metrics = metrics;
     }
 
     @Transactional
     public ServiceResponse create(CreateServiceRequest request) {
         CitizenService service = new CitizenService(request.name(), request.description());
-        return ServiceResponse.from(repository.save(service));
+        ServiceResponse response = ServiceResponse.from(repository.save(service));
+        metrics.incrementCreated();
+        return response;
     }
 
     @Transactional(readOnly = true)
     public ServiceResponse findById(Long id) {
         return repository.findById(id)
-                .map(ServiceResponse::from)
-                .orElseThrow(() -> new ServiceNotFoundException(id));
+                .map(entity -> {
+                    metrics.incrementConsulted();
+                    return ServiceResponse.from(entity);
+                })
+                .orElseThrow(() -> {
+                    metrics.incrementNotFound();
+                    return new ServiceNotFoundException(id);
+                });
     }
 
     @Transactional(readOnly = true)
