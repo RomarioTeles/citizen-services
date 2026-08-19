@@ -4,3 +4,19 @@ spring:
     username: citizen
     password: citizen
     driver-class-name: org.postgresql.Driver
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics
+  endpoint:
+    health:
+      show-details: always
+      group:
+        liveness:
+          include: ping
+          show-details: always
+        readiness:
+          include: db, ping
+          show-details: always

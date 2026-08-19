@@ -28,10 +28,20 @@ management:
   endpoints:
     web:
       exposure:
-        include: health
+        include: health, info, metrics
   endpoint:
     health:
       show-details: never
+      group:
+        liveness:
+          include: ping
+          show-details: never
+        readiness:
+          include: db, ping
+          show-details: never
+  info:
+    env:
+      enabled: true
 
 info:
   app:

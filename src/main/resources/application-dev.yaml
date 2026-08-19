@@ -2,6 +2,11 @@ management:
   endpoint:
     health:
       show-details: always
+      group:
+        liveness:
+          show-details: always
+        readiness:
+          show-details: always
 
 logging:
   level:

@@ -153,7 +153,33 @@ This is why `DB_URL` is overridden in the `app` service environment to use `post
 
 ---
 
-## Health endpoints
+## Observability
+
+### Architecture
+
+```
+                Citizen Services
+                       │
+                       ▼
+                  Actuator
+                       │
+         ┌─────────────┼─────────────┐
+         ▼             ▼             ▼
+      Health        Metrics        Info
+         │             │
+   ┌─────┴─────┐       │
+   ▼           ▼       ▼
+Liveness  Readiness  Micrometer
+               │
+               ▼
+           PostgreSQL
+```
+
+Metrics are produced by **Micrometer**, the vendor-neutral metrics facade bundled with Spring Boot Actuator.
+In a future increment, a Prometheus registry will be added so that Micrometer exports metrics in the
+Prometheus scrape format, enabling Grafana dashboards.
+
+---
 
 ### API health endpoint
 
@@ -161,8 +187,7 @@ This is why `DB_URL` is overridden in the `app` service environment to use `post
 GET /api/v1/health
 ```
 
-Custom endpoint implemented in `HealthController`. Used in this phase to study Spring MVC.
-Returns a simple JSON response produced by the application itself.
+Custom endpoint implemented in `HealthController`. Returns a simple JSON response produced by the application itself.
 
 Expected response:
 
@@ -176,9 +201,7 @@ Expected response:
 GET /actuator/health
 ```
 
-Operational endpoint provided by Spring Boot Actuator. Reports the health of the application
-and its dependencies (database, disk space, etc.) as they are added in future increments.
-This is the endpoint that should be used by infrastructure tools (load balancers, orchestrators).
+Reports the overall health of the application. Used by infrastructure tools (load balancers, orchestrators).
 
 Expected response:
 
@@ -192,12 +215,77 @@ With `dev` profile, response includes component details:
 {
   "status": "UP",
   "components": {
-    "db": { "status": "UP", ... },
-    "diskSpace": { "status": "UP", ... },
+    "db": { "status": "UP" },
     "ping": { "status": "UP" }
   }
 }
 ```
+
+### Liveness
+
+```
+GET /actuator/health/liveness
+```
+
+**"Is the application alive?"**
+
+Indicates whether the JVM process is running and the application context is healthy.
+Liveness does **not** depend on external services such as PostgreSQL — a database outage does not
+mean the application process itself is broken. If liveness fails, the orchestrator should restart the container.
+
+Expected response:
+
+```json
+{ "status": "UP" }
+```
+
+### Readiness
+
+```
+GET /actuator/health/readiness
+```
+
+**"Is the application ready to receive traffic?"**
+
+Indicates whether the application is ready to handle requests. Includes the database health check (`db`).
+If PostgreSQL is unavailable, readiness returns `DOWN` and the orchestrator should stop routing traffic
+to this instance — without restarting it, since the process itself is still alive.
+
+Expected response when database is available:
+
+```json
+{ "status": "UP" }
+```
+
+### Metrics
+
+```
+GET /actuator/metrics
+```
+
+Lists all available metric names produced by Micrometer.
+
+```
+GET /actuator/metrics/{metric.name}
+```
+
+Returns details for a specific metric. Examples:
+
+| Endpoint | Description |
+|---|---|
+| `/actuator/metrics/http.server.requests` | HTTP request counts, durations, status codes |
+| `/actuator/metrics/jvm.memory.used` | JVM heap and non-heap memory usage |
+| `/actuator/metrics/jvm.threads.live` | Number of live JVM threads |
+| `/actuator/metrics/system.cpu.usage` | System CPU usage |
+| `/actuator/metrics/hikaricp.connections.active` | Active HikariCP datasource connections |
+
+### Info
+
+```
+GET /actuator/info
+```
+
+Returns application metadata configured via `info.*` properties.
 
 ---
 
