@@ -31,3 +31,11 @@ info:
   app:
     name: ${spring.application.name}
     version: 0.0.1-SNAPSHOT
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: alpha
+    tags-sorter: alpha

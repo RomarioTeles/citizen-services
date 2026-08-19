@@ -1,6 +1,6 @@
 package io.github.romarioteles.citizenservices.service.repository;
 
-import io.github.romarioteles.citizenservices.service.domain.Service;
+import io.github.romarioteles.citizenservices.service.domain.CitizenService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -22,9 +22,9 @@ class ServiceRepositoryTest {
 
     @Test
     void shouldSaveAndRetrieveService() {
-        Service service = new Service("Emissão de Segunda Via", "Solicitação de segunda via de documento");
+        CitizenService service = new CitizenService("Emissão de Segunda Via", "Solicitação de segunda via de documento");
 
-        Service saved = repository.save(service);
+        CitizenService saved = repository.save(service);
 
         assertThat(saved.getId()).isNotNull();
         assertThat(saved.getCreatedAt()).isNotNull();
@@ -33,10 +33,10 @@ class ServiceRepositoryTest {
 
     @Test
     void shouldFindById() {
-        Service service = new Service("Consulta de Benefício", null);
-        Service saved = repository.save(service);
+        CitizenService service = new CitizenService("Consulta de Benefício", null);
+        CitizenService saved = repository.save(service);
 
-        Optional<Service> found = repository.findById(saved.getId());
+        Optional<CitizenService> found = repository.findById(saved.getId());
 
         assertThat(found).isPresent();
         assertThat(found.get().getName()).isEqualTo("Consulta de Benefício");
@@ -46,13 +46,13 @@ class ServiceRepositoryTest {
 
     @Test
     void shouldPersistAllFields() {
-        Service service = new Service("Solicitação de Certidão", "Certidão de nascimento");
+        CitizenService service = new CitizenService("Solicitação de Certidão", "Certidão de nascimento");
 
-        Service saved = repository.save(service);
-        Optional<Service> found = repository.findById(saved.getId());
+        CitizenService saved = repository.save(service);
+        Optional<CitizenService> found = repository.findById(saved.getId());
 
         assertThat(found).isPresent();
-        Service retrieved = found.get();
+        CitizenService retrieved = found.get();
         assertThat(retrieved.getName()).isEqualTo("Solicitação de Certidão");
         assertThat(retrieved.getDescription()).isEqualTo("Certidão de nascimento");
         assertThat(retrieved.isActive()).isTrue();

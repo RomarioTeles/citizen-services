@@ -11,7 +11,7 @@ import java.time.Instant;
 
 @Entity
 @Table(name = "services")
-public class Service {
+public class CitizenService {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -32,10 +32,10 @@ public class Service {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    protected Service() {
+    protected CitizenService() {
     }
 
-    public Service(String name, String description) {
+    public CitizenService(String name, String description) {
         this.name = name;
         this.description = description;
         this.active = true;

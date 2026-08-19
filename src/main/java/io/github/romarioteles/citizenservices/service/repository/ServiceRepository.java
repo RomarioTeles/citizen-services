@@ -1,7 +1,7 @@
 package io.github.romarioteles.citizenservices.service.repository;
 
-import io.github.romarioteles.citizenservices.service.domain.Service;
+import io.github.romarioteles.citizenservices.service.domain.CitizenService;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface ServiceRepository extends JpaRepository<Service, Long> {
+public interface ServiceRepository extends JpaRepository<CitizenService, Long> {
 }
