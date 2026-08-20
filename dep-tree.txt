@@ -1,1 +1,0 @@
-bash: .mvnw.cmd: command not found
