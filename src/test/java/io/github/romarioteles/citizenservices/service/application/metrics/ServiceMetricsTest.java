@@ -10,6 +10,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.test.context.support.WithMockUser;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -27,6 +28,7 @@ class ServiceMetricsTest {
     private MeterRegistry registry;
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void shouldIncrementCreatedCounterOnCreate() {
         Counter counter = registry.counter("citizen.services.registrations");
         double before = counter.count();
@@ -37,6 +39,7 @@ class ServiceMetricsTest {
     }
 
     @Test
+    @WithMockUser
     void shouldIncrementConsultedCounterWhenServiceFound() {
         CitizenService saved = repository.save(new CitizenService("Serviço Métricas Consulta", null));
         Counter counter = registry.counter("citizen.services.consulted");
@@ -48,6 +51,7 @@ class ServiceMetricsTest {
     }
 
     @Test
+    @WithMockUser
     void shouldIncrementNotFoundCounterAndNotConsultedWhenServiceNotFound() {
         Counter notFound = registry.counter("citizen.services.not_found");
         Counter consulted = registry.counter("citizen.services.consulted");

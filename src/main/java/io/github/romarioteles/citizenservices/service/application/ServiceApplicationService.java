@@ -9,6 +9,7 @@ import io.github.romarioteles.citizenservices.service.application.metrics.Servic
 import io.github.romarioteles.citizenservices.service.domain.CitizenService;
 import io.github.romarioteles.citizenservices.service.repository.ServiceRepository;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +24,7 @@ public class ServiceApplicationService {
         this.metrics = metrics;
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @Transactional
     public ServiceResponse create(CreateServiceRequest request) {
         CitizenService service = new CitizenService(request.name(), request.description());
@@ -31,6 +33,7 @@ public class ServiceApplicationService {
         return response;
     }
 
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @Transactional(readOnly = true)
     public ServiceResponse findById(Long id) {
         return repository.findById(id)
@@ -44,11 +47,13 @@ public class ServiceApplicationService {
                 });
     }
 
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @Transactional(readOnly = true)
     public ServicePageResponse findAll(Pageable pageable) {
         return ServicePageResponse.from(repository.findAll(pageable));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @Transactional
     public ServiceResponse update(Long id, UpdateServiceRequest request) {
         CitizenService service = repository.findById(id)
@@ -58,6 +63,7 @@ public class ServiceApplicationService {
         return ServiceResponse.from(repository.save(service));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @Transactional
     public void deactivate(Long id) {
         CitizenService service = repository.findById(id)
@@ -66,6 +72,7 @@ public class ServiceApplicationService {
         repository.save(service);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @Transactional
     public ServiceResponse activate(Long id) {
         CitizenService service = repository.findById(id)

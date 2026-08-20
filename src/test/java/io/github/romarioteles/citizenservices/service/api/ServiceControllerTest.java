@@ -46,11 +46,15 @@ class ServiceControllerTest {
         return builder.with(httpBasic("dev", "dev-password"));
     }
 
+    private static MockHttpServletRequestBuilder authAdmin(MockHttpServletRequestBuilder builder) {
+        return builder.with(httpBasic("admin", "admin-password"));
+    }
+
     @Test
     void shouldCreateServiceAndReturn201() throws Exception {
         long countBefore = repository.count();
 
-        mockMvc.perform(auth(post("/api/v1/services")
+        mockMvc.perform(authAdmin(post("/api/v1/services")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -91,7 +95,7 @@ class ServiceControllerTest {
 
     @Test
     void shouldReturn400WhenNameIsBlank() throws Exception {
-        mockMvc.perform(auth(post("/api/v1/services")
+        mockMvc.perform(authAdmin(post("/api/v1/services")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 { "name": "" }
@@ -103,7 +107,7 @@ class ServiceControllerTest {
     void shouldReturn400WhenNameExceeds150Characters() throws Exception {
         String longName = "a".repeat(151);
 
-        mockMvc.perform(auth(post("/api/v1/services")
+        mockMvc.perform(authAdmin(post("/api/v1/services")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 { "name": "%s" }
@@ -115,7 +119,7 @@ class ServiceControllerTest {
     void shouldReturn400WhenDescriptionExceeds500Characters() throws Exception {
         String longDescription = "a".repeat(501);
 
-        mockMvc.perform(auth(post("/api/v1/services")
+        mockMvc.perform(authAdmin(post("/api/v1/services")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -183,7 +187,7 @@ class ServiceControllerTest {
         void shouldUpdateServiceAndReturn200() throws Exception {
             CitizenService saved = repository.save(new CitizenService("Nome original", "Descrição original"));
 
-            mockMvc.perform(auth(put("/api/v1/services/{id}", saved.getId())
+            mockMvc.perform(authAdmin(put("/api/v1/services/{id}", saved.getId())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("""
                                     {
@@ -202,7 +206,7 @@ class ServiceControllerTest {
 
         @Test
         void shouldReturn404WhenUpdatingNonExistentService() throws Exception {
-            mockMvc.perform(auth(put("/api/v1/services/999999")
+            mockMvc.perform(authAdmin(put("/api/v1/services/999999")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("""
                                     {
@@ -217,7 +221,7 @@ class ServiceControllerTest {
         void shouldReturn400WhenUpdateRequestIsInvalid() throws Exception {
             CitizenService saved = repository.save(new CitizenService("Serviço", null));
 
-            mockMvc.perform(auth(put("/api/v1/services/{id}", saved.getId())
+            mockMvc.perform(authAdmin(put("/api/v1/services/{id}", saved.getId())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("""
                                     { "name": "" }
@@ -230,7 +234,7 @@ class ServiceControllerTest {
             CitizenService saved = repository.save(new CitizenService("Serviço", null));
             boolean active = saved.isActive();
 
-            mockMvc.perform(auth(put("/api/v1/services/{id}", saved.getId())
+            mockMvc.perform(authAdmin(put("/api/v1/services/{id}", saved.getId())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("""
                                     {
@@ -254,7 +258,7 @@ class ServiceControllerTest {
             saved.setActive(false);
             repository.save(saved);
 
-            mockMvc.perform(auth(patch("/api/v1/services/{id}/activate", saved.getId())))
+            mockMvc.perform(authAdmin(patch("/api/v1/services/{id}/activate", saved.getId())))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(saved.getId()))
                     .andExpect(jsonPath("$.active").value(true));
@@ -262,7 +266,7 @@ class ServiceControllerTest {
 
         @Test
         void shouldReturn404WhenActivatingNonExistentService() throws Exception {
-            mockMvc.perform(auth(patch("/api/v1/services/999999/activate")))
+            mockMvc.perform(authAdmin(patch("/api/v1/services/999999/activate")))
                     .andExpect(status().isNotFound());
         }
 
@@ -270,7 +274,7 @@ class ServiceControllerTest {
         void shouldActivateAlreadyActiveService() throws Exception {
             CitizenService saved = repository.save(new CitizenService("Serviço ativo", null));
 
-            mockMvc.perform(auth(patch("/api/v1/services/{id}/activate", saved.getId())))
+            mockMvc.perform(authAdmin(patch("/api/v1/services/{id}/activate", saved.getId())))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.active").value(true));
         }
@@ -283,7 +287,7 @@ class ServiceControllerTest {
         void shouldDeactivateServiceAndReturn204() throws Exception {
             CitizenService saved = repository.save(new CitizenService("Serviço para desativar", null));
 
-            mockMvc.perform(auth(delete("/api/v1/services/{id}", saved.getId())))
+            mockMvc.perform(authAdmin(delete("/api/v1/services/{id}", saved.getId())))
                     .andExpect(status().isNoContent());
 
             CitizenService updated = repository.findById(saved.getId()).orElseThrow();
@@ -294,7 +298,7 @@ class ServiceControllerTest {
         void shouldKeepRecordInDatabaseAfterDelete() throws Exception {
             CitizenService saved = repository.save(new CitizenService("Serviço persistido", null));
 
-            mockMvc.perform(auth(delete("/api/v1/services/{id}", saved.getId())))
+            mockMvc.perform(authAdmin(delete("/api/v1/services/{id}", saved.getId())))
                     .andExpect(status().isNoContent());
 
             assertThat(repository.findById(saved.getId())).isPresent();
@@ -302,7 +306,7 @@ class ServiceControllerTest {
 
         @Test
         void shouldReturn404WhenDeletingNonExistentService() throws Exception {
-            mockMvc.perform(auth(delete("/api/v1/services/999999")))
+            mockMvc.perform(authAdmin(delete("/api/v1/services/999999")))
                     .andExpect(status().isNotFound());
         }
 
@@ -310,7 +314,7 @@ class ServiceControllerTest {
         void shouldReturnActiveAsFalseOnGetAfterDelete() throws Exception {
             CitizenService saved = repository.save(new CitizenService("Serviço", "Descrição"));
 
-            mockMvc.perform(auth(delete("/api/v1/services/{id}", saved.getId())))
+            mockMvc.perform(authAdmin(delete("/api/v1/services/{id}", saved.getId())))
                     .andExpect(status().isNoContent());
 
             mockMvc.perform(auth(get("/api/v1/services/{id}", saved.getId())))

@@ -6,6 +6,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -62,6 +64,11 @@ public class GlobalExceptionHandler {
                 "Parâmetro inválido: " + ex.getName(),
                 request.getRequestURI()
         );
+    }
+
+    @ExceptionHandler({AccessDeniedException.class, AuthenticationException.class})
+    public void handleSecurityException(RuntimeException ex) throws RuntimeException {
+        throw ex;
     }
 
     @ExceptionHandler(Exception.class)

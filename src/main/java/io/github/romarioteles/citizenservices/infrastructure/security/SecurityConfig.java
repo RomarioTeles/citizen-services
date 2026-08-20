@@ -3,6 +3,7 @@ package io.github.romarioteles.citizenservices.infrastructure.security;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.User;
@@ -13,6 +14,7 @@ import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
+@EnableMethodSecurity
 public class SecurityConfig {
 
     @Value("${security.username:dev}")
@@ -20,6 +22,12 @@ public class SecurityConfig {
 
     @Value("${security.password:dev-password}")
     private String password;
+
+    @Value("${security.admin.username:admin}")
+    private String adminUsername;
+
+    @Value("${security.admin.password:admin-password}")
+    private String adminPassword;
 
     private static final String[] PUBLIC_ROUTES = {
         "/actuator/health",
@@ -57,6 +65,11 @@ public class SecurityConfig {
                 .password(encoder.encode(password))
                 .roles("USER")
                 .build();
-        return new InMemoryUserDetailsManager(user);
+        var admin = User.builder()
+                .username(adminUsername)
+                .password(encoder.encode(adminPassword))
+                .roles("ADMIN")
+                .build();
+        return new InMemoryUserDetailsManager(user, admin);
     }
 }

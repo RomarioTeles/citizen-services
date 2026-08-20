@@ -65,3 +65,6 @@ springdoc:
 security:
   username: ${SECURITY_USERNAME:dev}
   password: ${SECURITY_PASSWORD:dev-password}
+  admin:
+    username: ${SECURITY_ADMIN_USERNAME:admin}
+    password: ${SECURITY_ADMIN_PASSWORD:admin-password}

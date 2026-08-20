@@ -43,6 +43,10 @@ class GlobalExceptionHandlerTest {
         return builder.with(httpBasic("dev", "dev-password"));
     }
 
+    private static MockHttpServletRequestBuilder authAdmin(MockHttpServletRequestBuilder builder) {
+        return builder.with(httpBasic("admin", "admin-password"));
+    }
+
     @Test
     void shouldReturn404WithErrorContractWhenServiceNotFound() throws Exception {
         mockMvc.perform(auth(get("/api/v1/services/999999")))
@@ -56,7 +60,7 @@ class GlobalExceptionHandlerTest {
 
     @Test
     void shouldReturn400WithFieldErrorsWhenPostRequestIsInvalid() throws Exception {
-        mockMvc.perform(auth(post("/api/v1/services")
+        mockMvc.perform(authAdmin(post("/api/v1/services")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 { "name": "" }
@@ -72,7 +76,7 @@ class GlobalExceptionHandlerTest {
 
     @Test
     void shouldReturn404WithErrorContractWhenPuttingNonExistentService() throws Exception {
-        mockMvc.perform(auth(put("/api/v1/services/999999")
+        mockMvc.perform(authAdmin(put("/api/v1/services/999999")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -88,7 +92,7 @@ class GlobalExceptionHandlerTest {
 
     @Test
     void shouldReturn404WithErrorContractWhenDeletingNonExistentService() throws Exception {
-        mockMvc.perform(auth(delete("/api/v1/services/999999")))
+        mockMvc.perform(authAdmin(delete("/api/v1/services/999999")))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
                 .andExpect(jsonPath("$.error").value("NOT_FOUND"))
@@ -97,7 +101,7 @@ class GlobalExceptionHandlerTest {
 
     @Test
     void shouldReturn404WithErrorContractWhenActivatingNonExistentService() throws Exception {
-        mockMvc.perform(auth(patch("/api/v1/services/999999/activate")))
+        mockMvc.perform(authAdmin(patch("/api/v1/services/999999/activate")))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
                 .andExpect(jsonPath("$.error").value("NOT_FOUND"))

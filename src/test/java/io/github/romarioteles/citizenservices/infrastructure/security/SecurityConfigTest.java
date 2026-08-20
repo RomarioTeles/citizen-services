@@ -3,6 +3,7 @@ package io.github.romarioteles.citizenservices.infrastructure.security;
 import io.github.romarioteles.citizenservices.service.domain.CitizenService;
 import io.github.romarioteles.citizenservices.service.repository.ServiceRepository;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -10,12 +11,12 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
+import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.springframework.http.MediaType.APPLICATION_JSON;
 
 @SpringBootTest
 class SecurityConfigTest {
@@ -41,15 +42,6 @@ class SecurityConfigTest {
 
         mockMvc.perform(get("/api/v1/services/{id}", saved.getId()))
                 .andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    void shouldReturn200WhenGetServiceWithValidCredentials() throws Exception {
-        CitizenService saved = repository.save(new CitizenService("Serviço Autenticado", null));
-
-        mockMvc.perform(get("/api/v1/services/{id}", saved.getId())
-                        .with(httpBasic("dev", "dev-password")))
-                .andExpect(status().isOk());
     }
 
     @Test
@@ -93,5 +85,53 @@ class SecurityConfigTest {
     void shouldReturn401ForUnknownEndpointWithoutAuth() throws Exception {
         mockMvc.perform(get("/api/v1/unknown"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Nested
+    class UserRoleTests {
+
+        @Test
+        void shouldReturn200WhenUserGetsService() throws Exception {
+            CitizenService saved = repository.save(new CitizenService("Serviço USER", null));
+
+            mockMvc.perform(get("/api/v1/services/{id}", saved.getId())
+                            .with(httpBasic("dev", "dev-password")))
+                    .andExpect(status().isOk());
+        }
+
+        @Test
+        void shouldReturn403WhenUserCreatesService() throws Exception {
+            mockMvc.perform(post("/api/v1/services")
+                            .with(httpBasic("dev", "dev-password"))
+                            .contentType(APPLICATION_JSON)
+                            .content("""
+                                    { "name": "Serviço USER tentando criar" }
+                                    """))
+                    .andExpect(status().isForbidden());
+        }
+    }
+
+    @Nested
+    class AdminRoleTests {
+
+        @Test
+        void shouldReturn200WhenAdminGetsService() throws Exception {
+            CitizenService saved = repository.save(new CitizenService("Serviço ADMIN", null));
+
+            mockMvc.perform(get("/api/v1/services/{id}", saved.getId())
+                            .with(httpBasic("admin", "admin-password")))
+                    .andExpect(status().isOk());
+        }
+
+        @Test
+        void shouldReturn201WhenAdminCreatesService() throws Exception {
+            mockMvc.perform(post("/api/v1/services")
+                            .with(httpBasic("admin", "admin-password"))
+                            .contentType(APPLICATION_JSON)
+                            .content("""
+                                    { "name": "Serviço criado pelo ADMIN" }
+                                    """))
+                    .andExpect(status().isCreated());
+        }
     }
 }

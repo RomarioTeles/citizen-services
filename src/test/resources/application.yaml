@@ -24,3 +24,6 @@ management:
 security:
   username: dev
   password: dev-password
+  admin:
+    username: admin
+    password: admin-password
