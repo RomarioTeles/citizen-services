@@ -20,3 +20,7 @@ management:
         readiness:
           include: db, ping
           show-details: always
+
+security:
+  username: dev
+  password: dev-password

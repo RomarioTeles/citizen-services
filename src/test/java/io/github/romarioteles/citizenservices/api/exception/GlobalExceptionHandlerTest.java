@@ -1,6 +1,5 @@
 package io.github.romarioteles.citizenservices.api.exception;
 
-import io.github.romarioteles.citizenservices.service.domain.CitizenService;
 import io.github.romarioteles.citizenservices.service.repository.ServiceRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -8,9 +7,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -32,12 +34,18 @@ class GlobalExceptionHandlerTest {
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.webAppContextSetup(context).build();
+        mockMvc = MockMvcBuilders.webAppContextSetup(context)
+                .apply(springSecurity())
+                .build();
+    }
+
+    private static MockHttpServletRequestBuilder auth(MockHttpServletRequestBuilder builder) {
+        return builder.with(httpBasic("dev", "dev-password"));
     }
 
     @Test
     void shouldReturn404WithErrorContractWhenServiceNotFound() throws Exception {
-        mockMvc.perform(get("/api/v1/services/999999"))
+        mockMvc.perform(auth(get("/api/v1/services/999999")))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.timestamp").isNotEmpty())
                 .andExpect(jsonPath("$.status").value(404))
@@ -48,11 +56,11 @@ class GlobalExceptionHandlerTest {
 
     @Test
     void shouldReturn400WithFieldErrorsWhenPostRequestIsInvalid() throws Exception {
-        mockMvc.perform(post("/api/v1/services")
+        mockMvc.perform(auth(post("/api/v1/services")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 { "name": "" }
-                                """))
+                                """)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").isNotEmpty())
                 .andExpect(jsonPath("$.status").value(400))
@@ -64,14 +72,14 @@ class GlobalExceptionHandlerTest {
 
     @Test
     void shouldReturn404WithErrorContractWhenPuttingNonExistentService() throws Exception {
-        mockMvc.perform(put("/api/v1/services/999999")
+        mockMvc.perform(auth(put("/api/v1/services/999999")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
                                   "name": "Qualquer nome",
                                   "description": "Qualquer descrição"
                                 }
-                                """))
+                                """)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
                 .andExpect(jsonPath("$.error").value("NOT_FOUND"))
@@ -80,7 +88,7 @@ class GlobalExceptionHandlerTest {
 
     @Test
     void shouldReturn404WithErrorContractWhenDeletingNonExistentService() throws Exception {
-        mockMvc.perform(delete("/api/v1/services/999999"))
+        mockMvc.perform(auth(delete("/api/v1/services/999999")))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
                 .andExpect(jsonPath("$.error").value("NOT_FOUND"))
@@ -89,7 +97,7 @@ class GlobalExceptionHandlerTest {
 
     @Test
     void shouldReturn404WithErrorContractWhenActivatingNonExistentService() throws Exception {
-        mockMvc.perform(patch("/api/v1/services/999999/activate"))
+        mockMvc.perform(auth(patch("/api/v1/services/999999/activate")))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
                 .andExpect(jsonPath("$.error").value("NOT_FOUND"))

@@ -11,6 +11,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -33,6 +35,7 @@ class CorrelationIdFilterTest {
     @BeforeEach
     void setUp() {
         mockMvc = MockMvcBuilders.webAppContextSetup(context)
+                .apply(springSecurity())
                 .addFilters(correlationIdFilter)
                 .build();
     }
@@ -42,6 +45,7 @@ class CorrelationIdFilterTest {
         CitizenService saved = repository.save(new CitizenService("Serviço teste", null));
 
         mockMvc.perform(get("/api/v1/services/{id}", saved.getId())
+                        .with(httpBasic("dev", "dev-password"))
                         .header(CorrelationIdFilter.HEADER, "test-correlation-id"))
                 .andExpect(status().isOk())
                 .andExpect(header().string(CorrelationIdFilter.HEADER, "test-correlation-id"));
@@ -51,7 +55,8 @@ class CorrelationIdFilterTest {
     void shouldGenerateCorrelationIdWhenNotProvided() throws Exception {
         CitizenService saved = repository.save(new CitizenService("Serviço sem correlation", null));
 
-        mockMvc.perform(get("/api/v1/services/{id}", saved.getId()))
+        mockMvc.perform(get("/api/v1/services/{id}", saved.getId())
+                        .with(httpBasic("dev", "dev-password")))
                 .andExpect(status().isOk())
                 .andExpect(header().exists(CorrelationIdFilter.HEADER));
     }
@@ -59,6 +64,7 @@ class CorrelationIdFilterTest {
     @Test
     void shouldPropagateCorrelationIdOn404() throws Exception {
         mockMvc.perform(get("/api/v1/services/999999")
+                        .with(httpBasic("dev", "dev-password"))
                         .header(CorrelationIdFilter.HEADER, "test-404-id"))
                 .andExpect(status().isNotFound())
                 .andExpect(header().string(CorrelationIdFilter.HEADER, "test-404-id"));
@@ -67,6 +73,7 @@ class CorrelationIdFilterTest {
     @Test
     void shouldPropagateCorrelationIdOn400() throws Exception {
         mockMvc.perform(post("/api/v1/services")
+                        .with(httpBasic("dev", "dev-password"))
                         .header(CorrelationIdFilter.HEADER, "test-400-id")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""

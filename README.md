@@ -153,6 +153,57 @@ This is why:
 
 ---
 
+## Security
+
+The application uses Spring Security with HTTP Basic authentication.
+
+### Protected endpoints
+
+| Endpoint | Access |
+|---|---|
+| `GET /actuator/health` | Public |
+| `GET /actuator/health/liveness` | Public |
+| `GET /actuator/health/readiness` | Public |
+| Swagger UI / OpenAPI docs | Public |
+| `POST /api/v1/services` | Authenticated |
+| `GET /api/v1/services/**` | Authenticated |
+| `GET /actuator/info` | Authenticated |
+| `GET /actuator/metrics` | Authenticated |
+| `GET /actuator/prometheus` | Authenticated |
+
+### Development credentials
+
+Configured via environment variables:
+
+```
+SECURITY_USERNAME=dev
+SECURITY_PASSWORD=dev-password
+```
+
+Defaults are for local development only. Do not use in production.
+
+### Using the Swagger Authorize button
+
+1. Open http://localhost:8080/swagger-ui.html
+2. Click the **Authorize** button (top right)
+3. Enter `Username` and `Password` (default: `dev` / `dev-password`)
+4. Click **Authorize**, then **Close**
+5. All subsequent requests from Swagger UI will include `Authorization: Basic ...`
+6. To test unauthenticated behavior, click **Authorize** → **Logout**
+
+### 401 vs 403
+
+- **401 Unauthorized** — request has no credentials or credentials are invalid
+- **403 Forbidden** — request is authenticated but lacks permission for the resource
+
+### API stateless
+
+The application is configured as stateless (`SessionCreationPolicy.STATELESS`). No HTTP session is created or used. Each request must carry its own credentials.
+
+> JWT and OAuth2 will be implemented in a future increment.
+
+---
+
 ## Observability
 
 ### URLs

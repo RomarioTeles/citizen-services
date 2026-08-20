@@ -9,11 +9,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
-
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -35,21 +37,27 @@ class ServiceControllerTest {
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.webAppContextSetup(context).build();
+        mockMvc = MockMvcBuilders.webAppContextSetup(context)
+                .apply(springSecurity())
+                .build();
+    }
+
+    private static MockHttpServletRequestBuilder auth(MockHttpServletRequestBuilder builder) {
+        return builder.with(httpBasic("dev", "dev-password"));
     }
 
     @Test
     void shouldCreateServiceAndReturn201() throws Exception {
         long countBefore = repository.count();
 
-        mockMvc.perform(post("/api/v1/services")
+        mockMvc.perform(auth(post("/api/v1/services")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
                                   "name": "Emissão de certidão",
                                   "description": "Solicitação de emissão de certidão"
                                 }
-                                """))
+                                """)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").isNumber())
                 .andExpect(jsonPath("$.name").value("Emissão de certidão"))
@@ -65,7 +73,7 @@ class ServiceControllerTest {
     void shouldReturnServiceWhenFoundById() throws Exception {
         CitizenService saved = repository.save(new CitizenService("Consulta de CPF", "Consulta situação do CPF"));
 
-        mockMvc.perform(get("/api/v1/services/{id}", saved.getId()))
+        mockMvc.perform(auth(get("/api/v1/services/{id}", saved.getId())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(saved.getId()))
                 .andExpect(jsonPath("$.name").value("Consulta de CPF"))
@@ -77,17 +85,17 @@ class ServiceControllerTest {
 
     @Test
     void shouldReturn404WhenServiceNotFound() throws Exception {
-        mockMvc.perform(get("/api/v1/services/999999"))
+        mockMvc.perform(auth(get("/api/v1/services/999999")))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void shouldReturn400WhenNameIsBlank() throws Exception {
-        mockMvc.perform(post("/api/v1/services")
+        mockMvc.perform(auth(post("/api/v1/services")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 { "name": "" }
-                                """))
+                                """)))
                 .andExpect(status().isBadRequest());
     }
 
@@ -95,11 +103,11 @@ class ServiceControllerTest {
     void shouldReturn400WhenNameExceeds150Characters() throws Exception {
         String longName = "a".repeat(151);
 
-        mockMvc.perform(post("/api/v1/services")
+        mockMvc.perform(auth(post("/api/v1/services")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 { "name": "%s" }
-                                """.formatted(longName)))
+                                """.formatted(longName))))
                 .andExpect(status().isBadRequest());
     }
 
@@ -107,14 +115,14 @@ class ServiceControllerTest {
     void shouldReturn400WhenDescriptionExceeds500Characters() throws Exception {
         String longDescription = "a".repeat(501);
 
-        mockMvc.perform(post("/api/v1/services")
+        mockMvc.perform(auth(post("/api/v1/services")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
                                   "name": "Serviço válido",
                                   "description": "%s"
                                 }
-                                """.formatted(longDescription)))
+                                """.formatted(longDescription))))
                 .andExpect(status().isBadRequest());
     }
 
@@ -133,7 +141,7 @@ class ServiceControllerTest {
 
         @Test
         void shouldReturnFirstPage() throws Exception {
-            mockMvc.perform(get("/api/v1/services").param("page", "0").param("size", "2"))
+            mockMvc.perform(auth(get("/api/v1/services").param("page", "0").param("size", "2")))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.content").isArray())
                     .andExpect(jsonPath("$.content.length()").value(2))
@@ -145,7 +153,7 @@ class ServiceControllerTest {
 
         @Test
         void shouldReturnSecondPage() throws Exception {
-            mockMvc.perform(get("/api/v1/services").param("page", "1").param("size", "2"))
+            mockMvc.perform(auth(get("/api/v1/services").param("page", "1").param("size", "2")))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.content").isArray())
                     .andExpect(jsonPath("$.content.length()").value(2))
@@ -159,7 +167,7 @@ class ServiceControllerTest {
         void shouldReturnEmptyContentWhenNoRecords() throws Exception {
             repository.deleteAll();
 
-            mockMvc.perform(get("/api/v1/services").param("page", "0").param("size", "10"))
+            mockMvc.perform(auth(get("/api/v1/services").param("page", "0").param("size", "10")))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.content").isArray())
                     .andExpect(jsonPath("$.content.length()").value(0))
@@ -175,14 +183,14 @@ class ServiceControllerTest {
         void shouldUpdateServiceAndReturn200() throws Exception {
             CitizenService saved = repository.save(new CitizenService("Nome original", "Descrição original"));
 
-            mockMvc.perform(put("/api/v1/services/{id}", saved.getId())
+            mockMvc.perform(auth(put("/api/v1/services/{id}", saved.getId())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("""
                                     {
                                       "name": "Nome atualizado",
                                       "description": "Descrição atualizada"
                                     }
-                                    """))
+                                    """)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(saved.getId()))
                     .andExpect(jsonPath("$.name").value("Nome atualizado"))
@@ -194,14 +202,14 @@ class ServiceControllerTest {
 
         @Test
         void shouldReturn404WhenUpdatingNonExistentService() throws Exception {
-            mockMvc.perform(put("/api/v1/services/999999")
+            mockMvc.perform(auth(put("/api/v1/services/999999")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("""
                                     {
                                       "name": "Qualquer nome",
                                       "description": "Qualquer descrição"
                                     }
-                                    """))
+                                    """)))
                     .andExpect(status().isNotFound());
         }
 
@@ -209,11 +217,11 @@ class ServiceControllerTest {
         void shouldReturn400WhenUpdateRequestIsInvalid() throws Exception {
             CitizenService saved = repository.save(new CitizenService("Serviço", null));
 
-            mockMvc.perform(put("/api/v1/services/{id}", saved.getId())
+            mockMvc.perform(auth(put("/api/v1/services/{id}", saved.getId())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("""
                                     { "name": "" }
-                                    """))
+                                    """)))
                     .andExpect(status().isBadRequest());
         }
 
@@ -222,14 +230,14 @@ class ServiceControllerTest {
             CitizenService saved = repository.save(new CitizenService("Serviço", null));
             boolean active = saved.isActive();
 
-            mockMvc.perform(put("/api/v1/services/{id}", saved.getId())
+            mockMvc.perform(auth(put("/api/v1/services/{id}", saved.getId())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("""
                                     {
                                       "name": "Nome novo",
                                       "description": "Descrição nova"
                                     }
-                                    """))
+                                    """)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(saved.getId()))
                     .andExpect(jsonPath("$.active").value(active))
@@ -246,7 +254,7 @@ class ServiceControllerTest {
             saved.setActive(false);
             repository.save(saved);
 
-            mockMvc.perform(patch("/api/v1/services/{id}/activate", saved.getId()))
+            mockMvc.perform(auth(patch("/api/v1/services/{id}/activate", saved.getId())))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(saved.getId()))
                     .andExpect(jsonPath("$.active").value(true));
@@ -254,7 +262,7 @@ class ServiceControllerTest {
 
         @Test
         void shouldReturn404WhenActivatingNonExistentService() throws Exception {
-            mockMvc.perform(patch("/api/v1/services/999999/activate"))
+            mockMvc.perform(auth(patch("/api/v1/services/999999/activate")))
                     .andExpect(status().isNotFound());
         }
 
@@ -262,7 +270,7 @@ class ServiceControllerTest {
         void shouldActivateAlreadyActiveService() throws Exception {
             CitizenService saved = repository.save(new CitizenService("Serviço ativo", null));
 
-            mockMvc.perform(patch("/api/v1/services/{id}/activate", saved.getId()))
+            mockMvc.perform(auth(patch("/api/v1/services/{id}/activate", saved.getId())))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.active").value(true));
         }
@@ -275,7 +283,7 @@ class ServiceControllerTest {
         void shouldDeactivateServiceAndReturn204() throws Exception {
             CitizenService saved = repository.save(new CitizenService("Serviço para desativar", null));
 
-            mockMvc.perform(delete("/api/v1/services/{id}", saved.getId()))
+            mockMvc.perform(auth(delete("/api/v1/services/{id}", saved.getId())))
                     .andExpect(status().isNoContent());
 
             CitizenService updated = repository.findById(saved.getId()).orElseThrow();
@@ -286,7 +294,7 @@ class ServiceControllerTest {
         void shouldKeepRecordInDatabaseAfterDelete() throws Exception {
             CitizenService saved = repository.save(new CitizenService("Serviço persistido", null));
 
-            mockMvc.perform(delete("/api/v1/services/{id}", saved.getId()))
+            mockMvc.perform(auth(delete("/api/v1/services/{id}", saved.getId())))
                     .andExpect(status().isNoContent());
 
             assertThat(repository.findById(saved.getId())).isPresent();
@@ -294,7 +302,7 @@ class ServiceControllerTest {
 
         @Test
         void shouldReturn404WhenDeletingNonExistentService() throws Exception {
-            mockMvc.perform(delete("/api/v1/services/999999"))
+            mockMvc.perform(auth(delete("/api/v1/services/999999")))
                     .andExpect(status().isNotFound());
         }
 
@@ -302,10 +310,10 @@ class ServiceControllerTest {
         void shouldReturnActiveAsFalseOnGetAfterDelete() throws Exception {
             CitizenService saved = repository.save(new CitizenService("Serviço", "Descrição"));
 
-            mockMvc.perform(delete("/api/v1/services/{id}", saved.getId()))
+            mockMvc.perform(auth(delete("/api/v1/services/{id}", saved.getId())))
                     .andExpect(status().isNoContent());
 
-            mockMvc.perform(get("/api/v1/services/{id}", saved.getId()))
+            mockMvc.perform(auth(get("/api/v1/services/{id}", saved.getId())))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(saved.getId()))
                     .andExpect(jsonPath("$.active").value(false));

@@ -4,6 +4,9 @@ global:
 scrape_configs:
   - job_name: citizen-services
     metrics_path: /actuator/prometheus
+    basic_auth:
+      username: dev
+      password: dev-password
     static_configs:
       - targets:
           - app:8080

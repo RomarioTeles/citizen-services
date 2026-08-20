@@ -61,3 +61,7 @@ springdoc:
     path: /swagger-ui.html
     operations-sorter: alpha
     tags-sorter: alpha
+
+security:
+  username: ${SECURITY_USERNAME:dev}
+  password: ${SECURITY_PASSWORD:dev-password}

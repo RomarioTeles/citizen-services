@@ -14,6 +14,8 @@ import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.filter.ServerHttpObservationFilter;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -39,6 +41,7 @@ class ActuatorObservabilityTest {
     @BeforeEach
     void setUp() {
         mockMvc = MockMvcBuilders.webAppContextSetup(context)
+                .apply(springSecurity())
                 .addFilters(new ServerHttpObservationFilter(observationRegistry), correlationIdFilter, httpRequestLoggingFilter)
                 .build();
     }
@@ -66,7 +69,8 @@ class ActuatorObservabilityTest {
 
     @Test
     void shouldExposeMetricsEndpoint() throws Exception {
-        mockMvc.perform(get("/actuator/metrics"))
+        mockMvc.perform(get("/actuator/metrics")
+                        .with(httpBasic("dev", "dev-password")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.names").isArray());
     }
@@ -75,7 +79,8 @@ class ActuatorObservabilityTest {
     void shouldExposeHttpServerRequestsMetricAfterRequest() throws Exception {
         mockMvc.perform(get("/actuator/health"));
 
-        mockMvc.perform(get("/actuator/metrics/http.server.requests"))
+        mockMvc.perform(get("/actuator/metrics/http.server.requests")
+                        .with(httpBasic("dev", "dev-password")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("http.server.requests"));
     }
@@ -85,21 +90,24 @@ class ActuatorObservabilityTest {
 
         @Test
         void shouldExposePrometheusEndpoint() throws Exception {
-            mockMvc.perform(get("/actuator/prometheus"))
+            mockMvc.perform(get("/actuator/prometheus")
+                            .with(httpBasic("dev", "dev-password")))
                     .andExpect(status().isOk())
                     .andExpect(content().contentTypeCompatibleWith("text/plain"));
         }
 
         @Test
         void shouldContainJvmMetric() throws Exception {
-            mockMvc.perform(get("/actuator/prometheus"))
+            mockMvc.perform(get("/actuator/prometheus")
+                            .with(httpBasic("dev", "dev-password")))
                     .andExpect(status().isOk())
                     .andExpect(content().string(containsString("jvm_memory_used_bytes")));
         }
 
         @Test
         void shouldContainBusinessMetrics() throws Exception {
-            mockMvc.perform(get("/actuator/prometheus"))
+            mockMvc.perform(get("/actuator/prometheus")
+                            .with(httpBasic("dev", "dev-password")))
                     .andExpect(status().isOk())
                     .andExpect(content().string(containsString("citizen_services_registrations_total")))
                     .andExpect(content().string(containsString("citizen_services_consulted_total")))
