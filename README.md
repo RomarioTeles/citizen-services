@@ -18,6 +18,8 @@ Platform for digital citizen services, built as a modular monolith designed to e
 - Docker
 - Prometheus
 - Grafana
+- Elasticsearch
+- Kibana
 
 ---
 
@@ -150,6 +152,8 @@ This is why:
 | `POSTGRES_DB` | `citizenservices` | PostgreSQL database name (Docker) |
 | `POSTGRES_USER` | `citizen` | PostgreSQL username (Docker) |
 | `POSTGRES_PASSWORD` | `citizen` | PostgreSQL password (Docker) |
+| `ELASTIC_PASSWORD` | `elastic-dev` | Elasticsearch `elastic` user password (Docker) |
+| `KIBANA_SYSTEM_PASSWORD` | `kibana-dev` | Elasticsearch `kibana_system` user password (Docker) |
 
 ---
 
@@ -204,6 +208,54 @@ The application is configured as stateless (`SessionCreationPolicy.STATELESS`). 
 
 ---
 
+## Log Observability
+
+### Elasticsearch
+
+Elasticsearch is a distributed search and analytics engine used here as the **storage and indexing layer for application logs**.
+
+The application already produces structured logs in **Elastic Common Schema (ECS)** JSON format. In a future increment those logs will be shipped into Elasticsearch for indexing and querying.
+
+- URL: http://localhost:9200
+- Credentials (local dev): `elastic` / `elastic-dev`
+- Configured as **single-node** (no cluster setup required locally)
+- Data persisted in the `elasticsearch_data` Docker volume
+
+Verify it is running:
+
+```bash
+curl -u elastic:elastic-dev http://localhost:9200
+```
+
+Expected response includes `cluster_name`, `version`, and `tagline`.
+
+### Kibana
+
+Kibana is the **web interface for querying, exploring and visualizing data stored in Elasticsearch**. Kibana is not a database — it reads from Elasticsearch.
+
+- URL: http://localhost:5601
+- Credentials (local dev): `elastic` / `elastic-dev`
+- Connects to Elasticsearch via the internal Docker service name `elasticsearch:9200`
+
+### Log flow
+
+```
+logs (ECS JSON)
+      │
+      │  stdout  (current)
+      │
+      │  FUTURE: Filebeat / Logstash
+      ▼
+Elasticsearch :9200
+      │
+      ▼
+  Kibana :5601
+```
+
+In this increment only Elasticsearch and Kibana are running. Log ingestion will be implemented in a subsequent increment.
+
+---
+
 ## Observability
 
 ### URLs
@@ -217,6 +269,8 @@ The application is configured as stateless (`SessionCreationPolicy.STATELESS`). 
 | Prometheus scrape | http://localhost:8080/actuator/prometheus |
 | Prometheus UI | http://localhost:9090 |
 | Grafana | http://localhost:3000 |
+| Elasticsearch | http://localhost:9200 |
+| Kibana | http://localhost:5601 |
 
 ---
 
