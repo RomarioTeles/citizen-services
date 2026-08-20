@@ -155,6 +155,20 @@ This is why:
 
 ## Observability
 
+### URLs
+
+| Service | URL |
+|---|---|
+| Application | http://localhost:8080 |
+| Swagger UI | http://localhost:8080/swagger-ui.html |
+| OpenAPI JSON | http://localhost:8080/v3/api-docs |
+| Actuator | http://localhost:8080/actuator |
+| Prometheus scrape | http://localhost:8080/actuator/prometheus |
+| Prometheus UI | http://localhost:9090 |
+| Grafana | http://localhost:3000 |
+
+---
+
 ### Architecture
 
 ```

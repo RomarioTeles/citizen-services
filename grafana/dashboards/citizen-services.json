@@ -2,7 +2,7 @@
   "title": "Citizen Services",
   "uid": "citizen-services",
   "schemaVersion": 38,
-  "refresh": "15s",
+  "refresh": "5s",
   "panels": [
     {
       "id": 1,
@@ -12,7 +12,7 @@
       "targets": [
         {
           "datasource": "Prometheus",
-          "expr": "citizen_services_registrations_total",
+          "expr": "increase(citizen_services_registrations_total[$__range])",
           "legendFormat": "cadastros"
         }
       ]
@@ -25,7 +25,7 @@
       "targets": [
         {
           "datasource": "Prometheus",
-          "expr": "citizen_services_consulted_total",
+          "expr": "increase(citizen_services_consulted_total[$__range])",
           "legendFormat": "consultas"
         }
       ]
@@ -38,7 +38,7 @@
       "targets": [
         {
           "datasource": "Prometheus",
-          "expr": "citizen_services_not_found_total",
+          "expr": "increase(citizen_services_not_found_total[$__range])",
           "legendFormat": "não encontrados"
         }
       ]
