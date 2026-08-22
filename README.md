@@ -20,6 +20,7 @@ Platform for digital citizen services, built as a modular monolith designed to e
 - Grafana
 - Elasticsearch
 - Kibana
+- Logstash
 
 ---
 
@@ -214,7 +215,7 @@ The application is configured as stateless (`SessionCreationPolicy.STATELESS`). 
 
 Elasticsearch is a distributed search and analytics engine used here as the **storage and indexing layer for application logs**.
 
-The application already produces structured logs in **Elastic Common Schema (ECS)** JSON format. In a future increment those logs will be shipped into Elasticsearch for indexing and querying.
+The application produces structured logs in **Elastic Common Schema (ECS)** JSON format, ingested via Logstash.
 
 - URL: http://localhost:9200
 - Credentials (local dev): `elastic` / `elastic-dev`
@@ -227,32 +228,113 @@ Verify it is running:
 curl -u elastic:elastic-dev http://localhost:9200
 ```
 
-Expected response includes `cluster_name`, `version`, and `tagline`.
-
 ### Kibana
 
-Kibana is the **web interface for querying, exploring and visualizing data stored in Elasticsearch**. Kibana is not a database — it reads from Elasticsearch.
+Kibana is the **web interface for querying, exploring and visualizing data stored in Elasticsearch**.
+
+After starting Kibana for the first time, reset the `kibana_system` password:
+
+```bash
+docker compose --profile infra exec elasticsearch \
+  bin/elasticsearch-reset-password -u kibana_system -i
+```
+
+When prompted, enter: `kibana-dev`
 
 - URL: http://localhost:5601
 - Credentials (local dev): `elastic` / `elastic-dev`
 - Connects to Elasticsearch via the internal Docker service name `elasticsearch:9200`
 
-### Log flow
+---
+
+## Log Pipeline
 
 ```
-logs (ECS JSON)
-      │
-      │  stdout  (current)
-      │
-      │  FUTURE: Filebeat / Logstash
-      ▼
-Elasticsearch :9200
-      │
-      ▼
-  Kibana :5601
+Citizen Services
+       │
+       │ stdout (ECS JSON)
+       ▼
+     Docker GELF log driver
+       │
+       │ UDP 12201
+       ▼
+    Logstash :12201
+       │ parse JSON, promote ECS fields
+       │ HTTP
+       ▼
+ Elasticsearch :9200
+  index: citizen-services-logs-YYYY.MM.dd
+       │
+       ▼
+   Kibana :5601
 ```
 
-In this increment only Elasticsearch and Kibana are running. Log ingestion will be implemented in a subsequent increment.
+### How it works
+
+- The application writes ECS JSON logs to **stdout** — no code changes required.
+- Docker's built-in **GELF log driver** captures stdout from the `app` container and forwards each log line as a GELF message to Logstash over UDP.
+- **Logstash** receives the GELF message, parses the `message` field as JSON, promotes the ECS fields to the document root, and ships the event to Elasticsearch.
+- **Elasticsearch** indexes the document under `citizen-services-logs-YYYY.MM.dd` (daily index, no ILM).
+- **Kibana** reads from Elasticsearch. Create a Data View for `citizen-services-logs*` using `@timestamp` as the time field.
+
+### Ports
+
+| Service | Port | Protocol |
+|---|---|---|
+| Logstash GELF input | 12201 | UDP |
+| Elasticsearch | 9200 | HTTP |
+| Kibana | 5601 | HTTP |
+
+### Starting the full stack
+
+```bash
+docker compose --profile infra up -d --build
+```
+
+Verify all services are running:
+
+```bash
+docker compose --profile infra ps
+```
+
+Expected services: `app`, `postgres`, `prometheus`, `grafana`, `elasticsearch`, `kibana`, `logstash`.
+
+### Validating log ingestion
+
+Generate some requests:
+
+```bash
+# Authenticated request (200)
+curl -u dev:dev-password http://localhost:8080/api/v1/services/1
+
+# Not found (404)
+curl -u dev:dev-password http://localhost:8080/api/v1/services/99999
+
+# Unauthenticated (401)
+curl http://localhost:8080/api/v1/services/1
+
+# With custom Correlation ID
+curl -u dev:dev-password -H "X-Correlation-Id: teste-123" http://localhost:8080/api/v1/services/1
+```
+
+Verify documents in Elasticsearch:
+
+```bash
+curl -u elastic:elastic-dev \
+  "http://localhost:9200/citizen-services-logs*/_search?pretty&size=3"
+```
+
+In Kibana:
+
+1. Open http://localhost:5601
+2. Go to **Stack Management → Data Views → Create data view**
+3. Name: `citizen-services-logs*`, Time field: `@timestamp`
+4. Open **Discover**, select the data view
+5. Search examples:
+   - `service.name : "citizen-services"`
+   - `log.level : "ERROR"`
+   - `correlationId : "teste-123"`
+   - `status : 404`
 
 ---
 

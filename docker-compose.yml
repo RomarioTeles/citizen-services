@@ -9,8 +9,15 @@ services:
       DB_URL: jdbc:postgresql://postgres:5432/citizenservices
       DB_USERNAME: ${POSTGRES_USER:-citizen}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-citizen}
+    logging:
+      driver: gelf
+      options:
+        gelf-address: "udp://host.docker.internal:12201"
+        tag: "citizen-services"
     depends_on:
       postgres:
+        condition: service_healthy
+      logstash:
         condition: service_healthy
 
   postgres:
@@ -88,6 +95,31 @@ services:
     depends_on:
       elasticsearch:
         condition: service_healthy
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.17.4
+    profiles:
+      - infra
+    environment:
+      ELASTICSEARCH_USERNAME: ${ELASTICSEARCH_USERNAME:-elastic}
+      ELASTICSEARCH_PASSWORD: ${ELASTIC_PASSWORD:-elastic-dev}
+      XPACK_MONITORING_ELASTICSEARCH_USERNAME: ${ELASTICSEARCH_USERNAME:-elastic}
+      XPACK_MONITORING_ELASTICSEARCH_PASSWORD: ${ELASTIC_PASSWORD:-elastic-dev}
+      LS_JAVA_OPTS: "-Xms256m -Xmx256m"
+      xpack.monitoring.enabled: "false"
+    ports:
+      - "12201:12201/udp"
+    volumes:
+      - ./logstash/pipeline:/usr/share/logstash/pipeline:ro
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9600 | grep -q 'green'"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
 
 volumes:
   postgres_data:
