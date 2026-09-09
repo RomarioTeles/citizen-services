@@ -11,17 +11,17 @@ Esta skill deve ser usada quando:
 
 ## O que Fazer
 
-### 1. Ler spec.md Completa
+### 1. Ler:
 
-- Requirements: O que precisa ser feito
-- Design: Como será feito
-- Tasks: Lista de tarefas
+- requirements.md: O que precisa ser feito
+- design.md: Como será feito
+- tasks.md: Lista de tarefas
 
 **Regra crítica**: Se tasks não estiverem claras ou requirements incompletos, **pare** e use `/spec requirements` ou `/spec design` para refinar.
 
-### 2. Seguir spec.md
+### 2. Seguir task.md
 
-Para cada task em `spec.md`:
+Para cada task em `task.md`:
 
 1. Leia a task com cuidado
 2. Entenda o que precisa ser feito

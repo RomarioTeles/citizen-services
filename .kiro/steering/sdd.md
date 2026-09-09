@@ -24,39 +24,56 @@ O SDD (Spec-Driven Development) é um processo para garantir rastreabilidade ent
 
 ## Estrutura da Specification
 
-Todas as specs ficam em Requirements + Design + Tasks:
+Todas as specs ficam em:
 
 ```
 .kiro/specs/<feature-name>/
-└── requirements.md
-└── design.md
-└── tasks.md
+├── requirements.md   # O que o sistema deve fazer
+├── design.md         # Como a solução será implementada
+└── tasks.md          # O que precisa ser feito
 ```
 
-### Estrutura do `spec.md`
+### Estrutura dos Arquivos
 
-O `spec.md` deve conter **apenas informações úteis para**:
-- Definir comportamento esperado
-- Orientar decisões técnicas
-- Orientar implementação
-- Permitir validação
+#### `requirements.md`
 
-```markdown
-# <Feature Name> - Spec
+Contém **apenas o que** o sistema deve fazer:
+- Descrição do problema/need
+- Funcionalidades esperadas
+- Acceptance criteria (quando está done)
+- Assumptions e dependencies
 
-## Requirements
-O que o sistema deve fazer. Seja específico sobre comportamento.
+**O que não incluir:**
+- Detalhes de implementação
+- Escolhas de tecnologia
+- Estrutura de código
 
-## Design
-Como a solução será implementada. Inclua:
-- Architecture (componentes, responsabilidades)
-- API changes (endpoints, DTOs)
+#### `design.md`
+
+Contém **como** a solução será implementada:
+- Architecture (componentes, responsabilidades, localização)
+- API changes (endpoints, DTOs, status codes)
 - Implementation details (classes a criar/modificar)
-- Testing strategy
+- Testing strategy (unit, integration, e2e)
+- Security and performance considerations
+- Database changes (migrations, se necessário)
 
-## Tasks
-Lista de tarefas de implementação (checklist)
-```
+**O que não incluir:**
+- Código detalhado (isso vem na implementation)
+- Decisões arbitrárias sem justificativa
+
+#### `tasks.md`
+
+Contém **o que precisa ser feito**:
+- Lista de tarefas (checklist)
+- Classes a criar
+- Classes a modificar
+- Migrations (se necessário)
+- Testes a escrever
+
+**O que evitar:**
+- Tarefas genéricas ("fazer código")
+- Tarefas muito grandes
 
 ---
 
@@ -65,11 +82,25 @@ Lista de tarefas de implementação (checklist)
 ### Etapas do Fluxo
 
 ```
-1. Requirements → 2. Review/Approval → 3. Design → 4. Review/Approval
+1. Requirements (requirements.md)
    ↓
-5. Tasks → 6. Implementation → 7. Tests → 8. Validation
+2. Review/Approval (humano ou time)
    ↓
-9. Review → 10. Merge
+3. Design (design.md)
+   ↓
+4. Review/Approval (humano ou time)
+   ↓
+5. Tasks (tasks.md)
+   ↓
+6. Implementation (code)
+   ↓
+7. Tests (spec ou tests.md)
+   ↓
+8. Validation (spec ou validation.md)
+   ↓
+9. Review (qualidade técnica)
+   ↓
+10. Merge (PR)
 ```
 
 ### Detalhamento das Etapas
@@ -227,13 +258,13 @@ Lista de tarefas de implementação (checklist)
 As specifications fazem parte do repositório Git e devem evoluir junto com a implementação.
 
 **Regras:**
-- Uma feature implementada deve ter sua spec.md no repo
+- Uma feature implementada deve ter seus arquivos de spec no repo
 - Uma alteração significativa no comportamento deve resultar na atualização correspondente da spec
 - Specs antigas devem ser mantidas (não deletadas) para histórico
 
 ### Não transforme spec em documentação burocrática
 
-A spec deve conter **somente informações úteis** para:
+As specs devem conter **somente informações úteis** para:
 - Definir comportamento
 - Orientar decisões
 - Orientar implementação
@@ -253,23 +284,27 @@ A spec deve conter **somente informações úteis** para:
 ```
 User: "Quero adicionar busca de serviços por nome"
 
-Spec: .kiro/specs/service-search-by-name/spec.md
+Spec: .kiro/specs/service-search-by-name/
 ```
 
-**Conteúdo do Requirements:**
-```
-## Requirements
+**Criar `requirements.md`:**
+```markdown
+# Service Search by Name - Requirements
 
+## Summary
+Add ability to search services by name or description using a query parameter.
+
+## Functional Requirements
 - [ ] FR-01: GET /api/v1/services?search=<term> returns matching services
 - [ ] FR-02: Search is case-insensitive
-- [ ] FR-03: Partial match in name or description
+- [ ] FR-03: Partial match supported in name or description
 - [ ] FR-04: Only active services are returned
 - [ ] FR-05: Results are paginated
 
-### Acceptance Criteria
+## Acceptance Criteria
 - User can search services by typing a term
 - Search matches name OR description (partial)
-- Search is case-insensitive
+- Search is case-insensitive (e.g., "cpf" matches "CPF")
 - Only active services are returned
 - Pagination applies
 ```
@@ -284,26 +319,18 @@ Spec: .kiro/specs/service-search-by-name/spec.md
 
 ### Passo 3: Design
 
-**Conteúdo do Design:**
-```
-## Design
+**Criar `design.md`:**
+```markdown
+# Service Search by Name - Design
 
-### Architecture
-
+## Architecture
 | Component | Responsibility | Location |
 |-----------|----------------|----------|
 | ServiceRepository | Add search query method | service/repository/ServiceRepository.java |
 | ServiceApplicationService | Implement search use case | service/application/ServiceApplicationService.java |
 | ServiceController | Add search endpoint | service/api/ServiceController.java |
 
-### API Changes
-
-| Endpoint | Method | Params | Response |
-|----------|--------|--------|----------|
-| /api/v1/services | GET | search, page, size | ServicePageResponse |
-
-### Implementation Details
-
+## Implementation Details
 - Classes to Modify: ServiceRepository, ServiceApplicationService, ServiceController
 - Migrations: None (uses existing columns)
 - Testing Strategy: Unit + Integration + E2E
@@ -319,60 +346,25 @@ Spec: .kiro/specs/service-search-by-name/spec.md
 
 ### Passo 5: Tasks
 
-```
-## Tasks
+**Criar `tasks.md`:**
+```markdown
+# Service Search by Name - Tasks
 
 - [ ] T-01: Update ServiceRepository - add search method
 - [ ] T-02: Update ServiceApplicationService - add search method
 - [ ] T-03: Update ServiceController - add search endpoint
 - [ ] T-04: Write unit tests for search
-- [ ] T-05: Write integration tests for repository
+- [ ] T-05: Write integration tests for repository query
 - [ ] T-06: Write E2E tests for search endpoint
 ```
 
-### Passo 6: Implementation
+### Passo 6-10: Implementation, Tests, Validation, Review, Merge
 
-**Implementação seguindo tasks:**
-- Criar/modificar classes conforme tasks
-- Escrever código seguindo padrões do projeto
-- Adicionar logs/métricas se necessário
-
-### Passo 7: Tests
-
-**Resultados dos testes:**
-- Unit tests: ✅ passed
-- Integration tests: ✅ passed
-- E2E tests: ✅ passed
-
-### Passo 8: Validation
-
-**Checklist:**
-- [x] FR-01: All requirements met
-- [x] FR-02: All requirements met
-- [x] FR-03: All requirements met
-- [x] FR-04: All requirements met
-- [x] FR-05: All requirements met
-- [x] Design followed
-- [x] Tests passing
-
-### Passo 9: Review (Final)
-
-**Code review:**
-- Código limpo e following padrões? ✅
-- Testes completos e passando? ✅
-- Security review: ✅ (auth required)
-- Performance: ✅ (< 500ms)
-
-**Status**: Ready for merge
-
-### Passo 10: Merge
-
-```
-1. Commit: .kiro/specs/service-search-by-name/spec.md
-2. Commit: Implementation changes
-3. Create PR
-4. Merge quando aprovado
-```
+- Seguir as tasks em `tasks.md`
+- Escrever testes
+- Atualizar specs com resultados
+- Finalizar code review
+- Merge quando validado
 
 ---
 

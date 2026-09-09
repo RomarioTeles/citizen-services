@@ -8,7 +8,7 @@ Este projeto utiliza Spec-Driven Development para garantir rastreabilidade e con
 
 O fluxo deve ser:
 
-**Requirement → Design → Tasks → Implementation → Tests → Validation → Review → Merge**
+**Requirement → Review/Approval → Design → Review/Approval → Tasks → Implementation → Tests → Validation → Review → Merge**
 
 Se durante a implementação surgir uma mudança que contradiga a specification, o agente **deve** identificar isso e propor a atualização da specification antes de alterar o código.
 
@@ -32,7 +32,9 @@ Se durante a implementação surgir uma mudança que contradiga a specification,
 
 specs/                 # Specs de features (criadas durante desenvolvimento)
 └── <feature-name>/
-    └── spec.md      # Requisitos + Design + Tasks em um único arquivo
+    ├── requirements.md   # O que o sistema deve fazer
+    ├── design.md         # Como a solução será implementada
+    └── tasks.md          # O que precisa ser feito
 ```
 
 ---
@@ -56,75 +58,66 @@ specs/                 # Specs de features (criadas durante desenvolvimento)
 ## Processo SDD (Resumo)
 
 ```
-1. Requirements (spec.md)
+1. Requirements (requirements.md)
    ↓
 2. Review/Approval (humano ou time)
    ↓
-3. Design (spec.md)
+3. Design (design.md)
    ↓
 4. Review/Approval (humano ou time)
    ↓
-5. Tasks (spec.md)
+5. Tasks (tasks.md)
    ↓
 6. Implementation (code)
    ↓
-7. Tests (spec.md)
+7. Tests (spec ou tests.md)
    ↓
-8. Validation (spec.md)
+8. Validation (spec ou validation.md)
    ↓
 9. Review (qualidade técnica)
    ↓
 10. Merge (PR)
 ```
 
-**Regra crítica**: Se durante a implementação surgir uma mudança que contradiz o design, **atualize spec.md antes de alterar o código**.
+**Regra crítica**: Se durante a implementação surgir uma mudança que contradiz o design, **atualize spec antes de alterar o código**.
 
 ---
 
-## Estrutura do `spec.md`
+## Estrutura dos Arquivos da Spec
 
-```markdown
-# <Feature Name> - Spec
+### `requirements.md`
 
-## Requirements
-O que o sistema deve fazer, do ponto de vista do negócio.
+O que o sistema deve fazer:
+- Summary: Descrição concisa da feature
+- Functional Requirements: O que o sistema DEVE fazer
+- Acceptance Criteria: Quando a feature está "done"
+- Assumptions: O que está sendo assumido
+- Dependencies: O que precisa estar pronto antes
 
-## Design
-Como a solução será implementada.
+**O que não incluir:** Detalhes de implementação, escolhas de tecnologia, estrutura de código
 
-### Architecture
-- Components: Tabela com responsabilidades
-- Data Model: Entidades e campos
-- API Changes: Endpoints e métodos
+### `design.md`
 
-### Implementation Details
-- Classes to Create: Lista de novas classes
-- Classes to Modify: Lista de modificações
-- Migrations: Mudanças no banco de dados
+Como a solução será implementada:
+- Architecture: Componentes, responsabilidades, localização
+- API Changes: Endpoints, DTOs, status codes
+- Implementation Details: Classes a criar/modificar
+- Testing Strategy: Unit, integration, e2e
+- Security and Performance Considerations
+- Database Changes: Migrations, se necessário
 
-### Testing Strategy
-- Unit tests: O que testar
-- Integration tests: O que testar
-- E2E tests: O que testar
+**O que não incluir:** Código detalhado (isso vem na implementation)
 
-### Security Considerations
-- Roles e permissions
-- Validations
+### `tasks.md`
 
-### Performance Considerations
-- Expected response time
-- Pagination
+O que precisa ser feito:
+- Lista de tarefas (checklist)
+- Classes a criar
+- Classes a modificar
+- Migrations (se necessário)
+- Testes a escrever
 
-## Tasks
-Lista de tarefas para implementação.
-
-- [ ] Create entity class
-- [ ] Create repository interface
-- [ ] Create DTOs
-- [ ] Update ServiceApplicationService
-- [ ] Create API endpoints
-- [ ] Add Flyway migration (if needed)
-```
+**O que evitar:** Tarefas genéricas, tarefas muito grandes
 
 ---
 
@@ -153,24 +146,33 @@ Consulte os arquivos em `.kiro/steering/` para:
 ## Exemplo Rápido: Busca por Nome
 
 ```
-1. Criar spec
+1. Criar diretório da spec
    mkdir .kiro/specs/service-search-by-name
-   touch .kiro/specs/service-search-by-name/spec.md
 
-2. Preencher spec.md
-   - Requirements: O que o sistema deve fazer
-   - Design: Como será implementado
-   - Tasks: Lista de tarefas
+2. Criar requirements.md
+   - Summary
+   - Functional Requirements
+   - Acceptance Criteria
 
 3. Sugerir review com o time
 
-4. Implementar seguindo tasks
+4. Criar design.md
+   - Architecture
+   - Implementation Details
+   - Testing Strategy
 
-5. Escrever testes
+5. Sugerir review com o time
 
-6. Validar contra requirements
+6. Criar tasks.md
+   - Lista de tarefas
 
-7. Merge quando validado
+7. Implementar seguindo tasks
+
+8. Escrever testes
+
+9. Validar contra requirements
+
+10. Merge quando validado
 ```
 
 ---

@@ -18,7 +18,22 @@ Esta skill deve ser usada quando:
 - Qual é o impacto no sistema existente?
 - Há dependências de outras features?
 
-### 2. Fazer Perguntas de Clarificação
+### 2. Criar `requirements.md`
+
+O arquivo `requirements.md` deve conter:
+
+- **Summary**: Descrição concisa da feature
+- **Functional Requirements**: O que o sistema DEVE fazer
+- **Acceptance Criteria**: Quando a feature está "done"
+- **Assumptions**: O que está sendo assumido
+- **Dependencies**: O que precisa estar pronto antes
+
+**O que não incluir:**
+- Detalhes de implementação
+- Escolhas de tecnologia
+- Estrutura de código
+
+### 3. Fazer Perguntas de Clarificação
 
 Pergunte sobre:
 
@@ -28,17 +43,6 @@ Pergunte sobre:
 - **Validações**: "Quais são as regras de validação?"
 - **Performance**: "Quais são as expectativas de performance?"
 - **Segurança**: "Quais são os requisitos de segurança?"
-- **Integrações**: "O sistema precisa se integrar com algo externo?"
-
-### 3. Identificar Requirements Missing
-
-Verifique se faltam:
-
-- **Functional requirements**: O que o sistema deve fazer
-- **Non-functional requirements**: Performance, segurança, etc.
-- **Acceptance criteria**: Como saber que está done?
-- **Assumptions**: O que está sendo assumido
-- **Dependencies**: O que precisa estar pronto antes
 
 ### 4. Priorizar Requirements
 
@@ -56,7 +60,6 @@ Para cada requirement, adicione:
 - **Request example**: JSON de exemplo
 - **Response example**: JSON esperado
 - **Error example**: Como erros são tratados
-- **Use case**: Cenário de uso
 
 ### 6. Validar com o Usuário/Time
 
@@ -115,18 +118,18 @@ Para cada requirement, adicione:
 
 ## Resultado Esperado
 
-- Requirements claros e específicos
-- Acceptance criteria definidos
-- Examples de requests/responses
-- Priorização MoSCoW
-- Perguntas de clarificação respondidas
+- `requirements.md` criado com:
+  - Requirements claros e específicos
+  - Acceptance criteria definidos
+  - Examples de requests/responses
+  - Priorização MoSCoW
+  - Perguntas de clarificação respondidas
 - **Aprovação do time/usuário**
 
 ## Próximos Passos
 
 Após refinamento e aprovação:
 
-1. Documentar requirements em `spec.md`
-2. Criar design técnico em `spec.md`
-3. Definir tasks de implementação em `spec.md`
-4. Implementar seguindo spec.md
+1. Criar `design.md` com arquitetura e implementação
+2. Criar `tasks.md` com lista de tarefas
+3. Seguir para implementação seguindo tasks

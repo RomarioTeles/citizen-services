@@ -1,30 +1,6 @@
-# Service Search by Name - Spec
+# Service Search by Name - Design
 
-## Requirements
-
-O que o sistema deve fazer, do ponto de vista do negócio.
-
-- [ ] **FR-01**: GET /api/v1/services?search=<term> returns matching services
-- [ ] **FR-02**: Search is case-insensitive
-- [ ] **FR-03**: Partial match supported in name or description
-- [ ] **FR-04**: Only active services are returned
-- [ ] **FR-05**: Results are paginated
-
-### Acceptance Criteria
-
-- [ ] User can search services by typing a term
-- [ ] Search matches name OR description (partial)
-- [ ] Search is case-insensitive (e.g., "cpf" matches "CPF")
-- [ ] Only active services are returned
-- [ ] Pagination applies (page, size, total)
-- [ ] Response time is acceptable (< 500ms)
-- [ ] Auth required (401 if not authenticated)
-
-## Design
-
-Como a solução será implementada.
-
-### Architecture
+## Architecture
 
 | Component | Responsibility | Location |
 |-----------|----------------|----------|
@@ -32,7 +8,7 @@ Como a solução será implementada.
 | ServiceApplicationService | Implement search use case | service/application/ServiceApplicationService.java |
 | ServiceController | Add search endpoint | service/api/ServiceController.java |
 
-### Data Model
+## Data Model
 
 **CitizenService (existing)**
 
@@ -45,13 +21,13 @@ Como a solução será implementada.
 | createdAt | Instant | No |
 | updatedAt | Instant | No |
 
-### API Changes
+## API Changes
 
 | Endpoint | Method | Request Params | Response |
 |----------|--------|----------------|----------|
 | /api/v1/services | GET | search (optional), page, size | ServicePageResponse |
 
-### Implementation Details
+## Implementation Details
 
 **Classes to Create**
 
@@ -74,31 +50,20 @@ Como a solução será implementada.
 
 - None (search uses existing columns)
 
-### Testing Strategy
+## Testing Strategy
 
 - **Unit**: ServiceApplicationService.search()
 - **Integration**: ServiceRepository.findByNameContainingOrDescriptionContaining()
 - **E2E**: ServiceController.searchServices()
 
-### Security Considerations
+## Security Considerations
 
 - Requires authentication (USER or ADMIN role)
 - No SQL injection (Spring Data JPA uses prepared statements)
 - No XSS (Response is JSON, no HTML rendering)
 
-### Performance Considerations
+## Performance Considerations
 
 - Expected response time: < 500ms
 - Pagination required to avoid large result sets
 - Database index recommended on name and description columns
-
-## Tasks
-
-Lista de tarefas para implementação.
-
-- [ ] **T-01**: Update ServiceRepository - add search method
-- [ ] **T-02**: Update ServiceApplicationService - add search method
-- [ ] **T-03**: Update ServiceController - add search endpoint
-- [ ] **T-04**: Write unit tests for search
-- [ ] **T-05**: Write integration tests for repository query
-- [ ] **T-06**: Write E2E tests for search endpoint
