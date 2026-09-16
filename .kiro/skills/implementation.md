@@ -4,24 +4,26 @@
 
 Esta skill deve ser usada quando:
 
-- Uma spec foi criada e aprovada em `spec.md`
-- As tasks foram definidas em `spec.md`
+- Uma spec foi criada e aprovada (requirements.md, design.md e tasks.md)
+- As tasks foram definidas em `tasks.md`
 - O design técnico foi aprovado
 - Está na hora de escrever código
 
+**Importante**: Leia primeiro o `sdd.md` para entender o processo completo antes de começar a implementar.
+
 ## O que Fazer
 
-### 1. Ler:
+### 1. Ler os arquivos da spec
 
-- requirements.md: O que precisa ser feito
-- design.md: Como será feito
-- tasks.md: Lista de tarefas
+- **requirements.md**: O que precisa ser feito
+- **design.md**: Como será feito
+- **tasks.md**: Lista de tarefas de implementação
 
-**Regra crítica**: Se tasks não estiverem claras ou requirements incompletos, **pare** e use `/spec requirements` ou `/spec design` para refinar.
+**Regra crítica**: Se tasks não estiverem claras ou requirements incompletos, **pare** e use a skill `requirements.md` para refinar.
 
-### 2. Seguir task.md
+### 2. Seguir tasks.md
 
-Para cada task em `task.md`:
+Para cada task em `tasks.md`:
 
 1. Leia a task com cuidado
 2. Entenda o que precisa ser feito
@@ -32,11 +34,10 @@ Para cada task em `task.md`:
 
 Consulte os Steering files em `.kiro/steering/`:
 
-- `architecture.md`: Padrões de camadas e estrutura
+- `overview.md`: Visão geral do projeto
 - `api.md`: Padrões de endpoint, DTOs, status codes
 - `persistence.md`: Padrões de banco de dados, Flyway, JPA
-- `testing.md`: Padrões de testes, naming, AAA
-- `security.md`: Padrões de autenticação, autorização
+- `security.md`: Padrões de autenticação e autorização
 - `observability.md`: Padrões de logs e métricas
 
 ### 4. Seguir Padrões de Código
@@ -155,49 +156,61 @@ public class NewEntityNotFoundException extends RuntimeException {
 }
 ```
 
-### 9. Atualizar spec.md
+---
 
-**Regra crítica**: Se durante a implementação surgir uma mudança que contradiz o design, **atualize spec.md antes de alterar o código**.
+## Regra para Mudanças Durante Implementação
+
+**Se durante a implementação for descoberta uma necessidade que contradiz ou altera significativamente a specification:**
+
+1. **Interromper** a implementação daquela decisão
+2. **Explicar** a divergência (por que a spec precisa ser alterada)
+3. **Propor** a alteração na specification
+4. **Atualizar** a spec (requirements.md e/ou design.md) após decisão/aprovação
+5. **Somente então** continuar a implementação
+
+**Para pequenas decisões técnicas** que não alterem requirements ou arquitetura (ex: escolha de nome de variável, estrutura interna de método), o agente pode prosseguir e **registrar a decisão no commit** ou em comentário no código.
 
 ## O que Evitar
 
 1. **Ignorar requirements**
    - Bad: "Fiz diferente porque achei melhor"
-   - Good: "Atualizar spec.md antes de alterar"
+   - Good: "Atualizar requirements.md antes de alterar"
 
-2. **Ignorar padrões**
+2. **Ignorar design**
+   - Bad: "Mudei a estrutura porque sim"
+   - Good: "Seguir design.md"
+
+3. **Ignorar tasks**
+   - Bad: "Pulei algumas tasks"
+   - Good: "Seguir tasks.md"
+
+4. **Ignorar padrões**
    - Bad: "Não vou usar record aqui"
    - Good: "Sigo os padrões do projeto"
 
-3. **Ignorar testes**
+5. **Ignorar testes**
    - Bad: "Vou escrever testes depois"
    - Good: "Testes são parte da implementação"
 
-4. **Merge sem validação**
+6. **Merge sem validação**
    - Bad: "Vou merge direto"
    - Good: "Validar contra requirements"
 
-## Comandos do Kiro
-
-Use estes comandos para iniciar:
-
-- `/spec implementation` - Implementar feature
-- `/spec tests` - Escrever/Atualizar testes
-- `/spec validation` - Validar contra requirements
-
 ## Resultado Esperado
 
-- Código implementado seguindo spec.md
+- Código implementado seguindo requirements.md e design.md
 - Classes criadas e/ou modificadas
 - Migrations criadas (se necessário)
 - Padrões do projeto seguidos
 - Código limpo e testável
+- Tasks marcadas como feitas em tasks.md
 
 ## Próximos Passos
 
 Após implementação:
 
 1. Escrever testes
-2. Rodar build e testes
-3. Validar contra requirements
-4. Atualizar spec.md
+2. Rodar build e testes (`./mvnw test`)
+3. Atualizar tasks.md com status
+4. Escrever/Atualizar tests.md com resultados
+5. Validar contra requirements (verificar acceptance criteria)
