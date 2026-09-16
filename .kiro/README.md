@@ -140,6 +140,7 @@ Consulte os arquivos em `.kiro/steering/` para:
 |-------|-----------------|
 | `requirements.md` | Análise e refinamento de requirements (perguntas de clarificação, MoSCoW, acceptance criteria) |
 | `implementation.md` | Implementação baseada em spec (padrões de código, classes, testes, logs, métricas) |
+| `testing.md` | Criação e atualização de testes (unit, integration, e2e) |
 
 ---
 
@@ -188,17 +189,18 @@ Consulte os arquivos em `.kiro/steering/` para:
 - ✅ `observability.md` - Padrões de logs e métricas
 - ✅ `sdd.md` - Processo SDD completo
 
-### Skills Criada
+### Skills Criadas
 
 - ✅ `requirements.md` - Análise de requirements
 - ✅ `implementation.md` - Implementação baseada em spec
+- ✅ `testing.md` - Criação e atualização de testes
 
 ---
 
 ## Notas Importantes
 
 1. **SDD não é burocracia**: É um guia para rastreabilidade e consistência
-2. **Adaptable**: Adjust process to project needs
+2. **Adaptable**: Ajustar processo às necessidades do projeto
 3. **Specs são vivos**: Atualizem conforme evoluem
 4. **Rastreabilidade**: Requirements → Design → Implementation → Tests
 5. **Validação**: Sempre validar contra requirements antes de merge

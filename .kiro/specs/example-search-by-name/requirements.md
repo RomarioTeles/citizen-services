@@ -1,10 +1,10 @@
-# Service Search by Name - Requirements
+# Busca de Serviços por Nome - Requisitos
 
-## Summary
+## Resumo
 
-Add ability to search services by name or description using a query parameter. This allows citizens to easily find the services they need without browsing all services.
+Adicionar capacidade de buscar serviços por nome ou descrição usando um parâmetro de query. Isso permite que os cidadãos encontrem facilmente os serviços de que precisam sem navegar por todos os serviços.
 
-## Functional Requirements
+## Requisitos Funcionais
 
 - [ ] **FR-01**: GET /api/v1/services?search=<term> returns matching services
 - [ ] **FR-02**: Search is case-insensitive
@@ -12,7 +12,7 @@ Add ability to search services by name or description using a query parameter. T
 - [ ] **FR-04**: Only active services are returned
 - [ ] **FR-05**: Results are paginated
 
-## Acceptance Criteria
+## Critérios de Aceitação
 
 - [ ] User can search services by typing a term
 - [ ] Search matches name OR description (partial)
@@ -22,14 +22,14 @@ Add ability to search services by name or description using a query parameter. T
 - [ ] Response time is acceptable (< 500ms)
 - [ ] Auth required (401 if not authenticated)
 
-## Assumptions
+## Suposições
 
 - Database is available and connected
 - User is authenticated (via HTTP Basic)
 - Existing CitizenService entity can be queried
 - PostgreSQL database supports LIKE queries with wildcards
 
-## Dependencies
+## Dependências
 
 - Existing CitizenService entity
 - Existing ServiceController, ServiceApplicationService, ServiceRepository
