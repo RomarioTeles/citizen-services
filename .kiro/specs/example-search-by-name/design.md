@@ -1,18 +1,18 @@
-# Busca de Serviços por Nome - Design
+# Service Search by Name - Design
 
-## Arquitetura
+## Architecture
 
-| Componente | Responsabilidade | Localização |
+| Component | Responsibility | Location |
 |-----------|----------------|----------|
-| ServiceRepository | Adicionar método de query de busca | service/repository/ServiceRepository.java |
-| ServiceApplicationService | Implementar caso de uso de busca | service/application/ServiceApplicationService.java |
-| ServiceController | Adicionar endpoint de busca | service/api/ServiceController.java |
+| ServiceRepository | Add search query method | service/repository/ServiceRepository.java |
+| ServiceApplicationService | Implement search use case | service/application/ServiceApplicationService.java |
+| ServiceController | Add search endpoint | service/api/ServiceController.java |
 
-## Modelo de Dados
+## Data Model
 
 **CitizenService (existing)**
 
-| Campo | Tipo | Buscável |
+| Field | Type | Searchable |
 |-------|------|------------|
 | id | Long | No |
 | name | String | Yes |
@@ -21,48 +21,48 @@
 | createdAt | Instant | No |
 | updatedAt | Instant | No |
 
-## Mudanças na API
+## API Changes
 
-| Endpoint | Método | Parâmetros de Request | Response |
-|----------|--------|----------------|----------|
-| /api/v1/services | GET | search (opcional), page, size | ServicePageResponse |
+| Endpoint | Method | Request Parameters | Response |
+|----------|--------|-------------------|----------|
+| /api/v1/services | GET | search (optional), page, size | ServicePageResponse |
 
-## Detalhes de Implementação
+## Implementation Details
 
-**Classes a Criar**
+**Classes to Create**
 
 - None (uses existing CitizenService)
 
-**Classes a Modificar**
+**Classes to Modify**
 
 1. `ServiceRepository`
-   - Adicionar método: `Page<CitizenService> findByNameContainingOrDescriptionContaining(String name, String description, Pageable pageable)`
+   - Add method: `Page<CitizenService> findByNameContainingOrDescriptionContaining(String name, String description, Pageable pageable)`
 
 2. `ServiceApplicationService`
-   - Adicionar método: `search(String search, Pageable pageable)` com @Transactional(readOnly = true)
-   - Usar padrão de busca `%search%` com toLowerCase()
+   - Add method: `search(String search, Pageable pageable)` with @Transactional(readOnly = true)
+   - Use search pattern `%search%` with toLowerCase()
 
 3. `ServiceController`
-   - Adicionar método de busca: `search(String search, Pageable pageable)` com @GetMapping
-   - Tratar search null/empty (retorna todos)
+   - Add search method: `search(String search, Pageable pageable)` with @GetMapping
+   - Handle null/empty search (returns all)
 
 **Migrations**
 
 - None (search uses existing columns)
 
-## Estratégia de Testes
+## Testing Strategy
 
 - **Unit**: ServiceApplicationService.search()
 - **Integration**: ServiceRepository.findByNameContainingOrDescriptionContaining()
 - **E2E**: ServiceController.searchServices()
 
-## Considerações de Segurança
+## Security Considerations
 
 - Requires authentication (USER or ADMIN role)
 - No SQL injection (Spring Data JPA uses prepared statements)
 - No XSS (Response is JSON, no HTML rendering)
 
-## Considerações de Performance
+## Performance Considerations
 
 - Expected response time: < 500ms
 - Pagination required to avoid large result sets
