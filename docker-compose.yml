@@ -9,6 +9,16 @@ services:
       DB_URL: jdbc:postgresql://postgres:5432/citizenservices
       DB_USERNAME: ${POSTGRES_USER:-citizen}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-citizen}
+      # OpenTelemetry (tracing via Java Agent -> OTLP -> Jaeger).
+      # O endpoint usa o nome do serviço Docker "jaeger" (NUNCA localhost),
+      # pois a app roda em container na mesma rede do compose.
+      OTEL_SERVICE_NAME: citizen-services
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_TRACES_EXPORTER: otlp
+      # Nesta primeira etapa focamos apenas em traces.
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
     logging:
       driver: gelf
       options:
@@ -19,6 +29,8 @@ services:
         condition: service_healthy
       logstash:
         condition: service_healthy
+      jaeger:
+        condition: service_started
 
   postgres:
     image: postgres:16-alpine
@@ -63,6 +75,18 @@ services:
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
     depends_on:
       - prometheus
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.76.0
+    profiles:
+      - infra
+    environment:
+      # Habilita o receiver OTLP (gRPC 4317 e HTTP 4318) no collector.
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16686:16686"   # Jaeger UI
+      - "4318:4318"     # OTLP HTTP (usado pela app via OTEL_EXPORTER_OTLP_ENDPOINT)
+      - "4317:4317"     # OTLP gRPC (exposto para uso opcional)
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.17.4

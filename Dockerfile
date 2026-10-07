@@ -65,6 +65,26 @@ COPY src/ src/
 RUN ./mvnw clean package -DskipTests -q
 
 
+# ------------------------------------------------------------
+# OpenTelemetry Java Agent
+# ------------------------------------------------------------
+
+# Baixamos o OpenTelemetry Java Agent durante o build, com a
+# versão FIXADA via ARG. Isso garante um build reproduzível:
+# qualquer máquina (ou CI) gera a mesma imagem, sem depender
+# de um JAR previamente baixado no computador do desenvolvedor.
+#
+# O agent faz "zero-code instrumentation": ele injeta bytecode
+# em tempo de execução para capturar telemetria (HTTP, JDBC,
+# Hibernate, etc.) sem alterar o código da aplicação.
+ARG OTEL_AGENT_VERSION=2.32.0
+ARG OTEL_AGENT_URL=https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v${OTEL_AGENT_VERSION}/opentelemetry-javaagent.jar
+
+# -fsSL: falha em erro HTTP, segue redirects, silencioso.
+# -L é essencial porque o GitHub redireciona o asset.
+RUN curl -fsSL -o /app/opentelemetry-javaagent.jar "${OTEL_AGENT_URL}"
+
+
 
 # ============================================================
 # ETAPA 2 — RUNTIME
@@ -99,6 +119,16 @@ COPY --from=builder /app/target/*.jar app.jar
 
 
 # ------------------------------------------------------------
+# OpenTelemetry Java Agent
+# ------------------------------------------------------------
+
+# Copia o agent baixado na etapa de build para a imagem final.
+# Mantemos a imagem de runtime limpa (sem JDK/Maven), trazendo
+# apenas o JAR da aplicação e o agent.
+COPY --from=builder /app/opentelemetry-javaagent.jar opentelemetry-javaagent.jar
+
+
+# ------------------------------------------------------------
 # Porta da aplicação
 # ------------------------------------------------------------
 
@@ -117,7 +147,13 @@ EXPOSE 8080
 
 # Comando executado quando o container for iniciado.
 #
+# Anexamos o OpenTelemetry Java Agent via -javaagent. A partir
+# daqui, a aplicação é instrumentada automaticamente e exporta
+# traces via OTLP. A configuração do exporter (endpoint, service
+# name, etc.) é feita por variáveis de ambiente OTEL_* definidas
+# no docker-compose.
+#
 # Equivale a:
 #
-# java -jar app.jar
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# java -javaagent:/app/opentelemetry-javaagent.jar -jar app.jar
+ENTRYPOINT ["java", "-javaagent:/app/opentelemetry-javaagent.jar", "-jar", "app.jar"]

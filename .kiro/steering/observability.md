@@ -188,6 +188,71 @@ Dashboard provisionado automaticamente com:
 - Use correlationId para rastrear requisições
 - Considare usar Spring Cloud Sleuth (já incluído via Actuator)
 
+## Distributed Tracing (OpenTelemetry + Jaeger)
+
+### Visão Geral
+
+Tracing distribuído implementado via **OpenTelemetry Java Agent** (zero-code /
+auto-instrumentation), exportando spans por **OTLP** para o **Jaeger**.
+
+```
+Spring Boot (app + OTel Java Agent)
+    ↓ OTLP HTTP (http/protobuf)
+Jaeger all-in-one (collector :4318 / gRPC :4317)
+    ↓
+Jaeger UI (:16686)
+```
+
+Nenhuma dependência OpenTelemetry é adicionada ao `pom.xml` e **não há
+instrumentação manual** no código da aplicação. Toda a instrumentação (HTTP,
+JDBC, Hibernate, Spring Data) é feita pelo agent em tempo de execução.
+
+### Como está configurado
+
+- **Agent**: baixado de forma reproduzível no build Docker, versão fixada em
+  `ARG OTEL_AGENT_VERSION` no `Dockerfile`, anexado via `-javaagent` no ENTRYPOINT.
+- **Jaeger**: serviço `jaeger` (`jaegertracing/all-in-one`) no `docker-compose.yml`,
+  profile `infra`, com `COLLECTOR_OTLP_ENABLED=true`.
+- **Exporter** (envs do serviço `app` no compose):
+
+```yaml
+OTEL_SERVICE_NAME: citizen-services
+OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318   # nome do serviço Docker, NUNCA localhost
+OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+OTEL_TRACES_EXPORTER: otlp
+OTEL_METRICS_EXPORTER: none   # etapa atual foca apenas em traces
+OTEL_LOGS_EXPORTER: none
+```
+
+### Como visualizar
+
+1. Suba o ambiente: `docker compose --profile infra up -d`
+2. Gere tráfego, ex.: `GET /api/v1/services` e `GET /api/v1/services/{id}` (HTTP Basic)
+3. Abra o Jaeger UI em `http://localhost:16686` e selecione o serviço `citizen-services`
+
+Um request a `GET /api/v1/services/{id}` produz um trace com o HTTP span (server)
+como raiz e o span JDBC (`SELECT citizenservices.services`, `db.system=postgresql`)
+aninhado, além de spans de Hibernate/Spring Data.
+
+### Correlação logs ↔ trace (base para a próxima etapa)
+
+O agent injeta automaticamente `trace_id` e `span_id` no MDC, de forma que eles
+já aparecem nos logs ECS ao lado do `correlationId` existente:
+
+```json
+{
+  "message": "HTTP request completed",
+  "correlationId": "48f87be7-19df-4e58-8467-e4ea154d1217",
+  "trace_id": "2eaf2815827354f9b23127363deb181a",
+  "span_id": "63dc3f81eafd02ba",
+  "trace_flags": "03"
+}
+```
+
+O mesmo `trace_id` do log pode ser aberto diretamente no Jaeger
+(`http://localhost:16686/trace/<trace_id>`). A unificação explícita entre
+`correlationId` e `trace_id`/`span_id` fica para a próxima etapa.
+
 ## State of the Art
 
 ### O que está implementado
@@ -198,10 +263,15 @@ Dashboard provisionado automaticamente com:
 - Actuator health endpoints
 - Prometheus metrics export
 - Grafana dashboard provisionado
+- Distributed tracing via OpenTelemetry Java Agent + Jaeger (HTTP + JDBC)
+- `trace_id`/`span_id` presentes nos logs ECS (via agent)
 
 ### O que não está implementado (sugestões futuras)
 
-- Distributed tracing (Jaeger, Zipkin)
+- Instrumentação manual (spans por caso de uso: Controller → Service → Repository)
+- Correlação explícita entre `correlationId` e `trace_id`/`span_id`
+- Export de métricas/logs via OTLP (hoje só traces)
+- Sampling tuning para produção
 - Log aggregation (ELK stack já configurado, mas ainda needs tuning)
 - Metrics alerting (Prometheus alertmanager)
 - SLO/SLI definitions
