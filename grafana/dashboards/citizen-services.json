@@ -12,7 +12,7 @@
       "targets": [
         {
           "datasource": "Prometheus",
-          "expr": "increase(citizen_services_registrations_total[$__range])",
+          "expr": "floor(increase(citizen_services_registrations_total[$__range]))",
           "legendFormat": "cadastros"
         }
       ]
@@ -25,7 +25,7 @@
       "targets": [
         {
           "datasource": "Prometheus",
-          "expr": "increase(citizen_services_consulted_total[$__range])",
+          "expr": "floor(increase(citizen_services_consulted_total[$__range]))",
           "legendFormat": "consultas"
         }
       ]
@@ -38,7 +38,7 @@
       "targets": [
         {
           "datasource": "Prometheus",
-          "expr": "increase(citizen_services_not_found_total[$__range])",
+          "expr": "floor(increase(citizen_services_not_found_total[$__range]))",
           "legendFormat": "não encontrados"
         }
       ]
