@@ -4,18 +4,21 @@ import io.github.romarioteles.citizenservices.service.api.dto.CreateServiceReque
 import io.github.romarioteles.citizenservices.service.application.ServiceApplicationService;
 import io.github.romarioteles.citizenservices.service.application.exception.ServiceNotFoundException;
 import io.github.romarioteles.citizenservices.service.domain.CitizenService;
+import io.github.romarioteles.citizenservices.TestcontainersConfiguration;
 import io.github.romarioteles.citizenservices.service.repository.ServiceRepository;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
+@Import(TestcontainersConfiguration.class)
 class ServiceMetricsTest {
 
     @Autowired

@@ -1,9 +1,11 @@
 package io.github.romarioteles.citizenservices.service.repository;
 
+import io.github.romarioteles.citizenservices.TestcontainersConfiguration;
 import io.github.romarioteles.citizenservices.service.domain.CitizenService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 
 import java.util.Optional;
 
@@ -12,9 +14,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Integration tests for ServiceRepository.
  *
- * These tests require a running PostgreSQL instance on localhost:5432.
+ * The PostgreSQL instance is provided automatically by Testcontainers
+ * (see {@link TestcontainersConfiguration}); no local database is required.
  */
 @SpringBootTest
+@Import(TestcontainersConfiguration.class)
 class ServiceRepositoryTest {
 
     @Autowired
