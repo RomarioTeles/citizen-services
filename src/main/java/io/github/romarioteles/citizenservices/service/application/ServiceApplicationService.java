@@ -8,6 +8,10 @@ import io.github.romarioteles.citizenservices.service.application.exception.Serv
 import io.github.romarioteles.citizenservices.service.application.metrics.ServiceMetrics;
 import io.github.romarioteles.citizenservices.service.domain.CitizenService;
 import io.github.romarioteles.citizenservices.service.repository.ServiceRepository;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.StatusCode;
+import io.opentelemetry.api.trace.Tracer;
+
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -18,19 +22,43 @@ public class ServiceApplicationService {
 
     private final ServiceRepository repository;
     private final ServiceMetrics metrics;
+    private final Tracer tracer;
 
-    public ServiceApplicationService(ServiceRepository repository, ServiceMetrics metrics) {
+    public ServiceApplicationService(ServiceRepository repository, ServiceMetrics metrics, Tracer tracer) {
         this.repository = repository;
         this.metrics = metrics;
+        this.tracer = tracer;
     }
 
     @PreAuthorize("hasRole('ADMIN')")
     @Transactional
     public ServiceResponse create(CreateServiceRequest request) {
-        CitizenService service = new CitizenService(request.name(), request.description());
-        ServiceResponse response = ServiceResponse.from(repository.save(service));
-        metrics.incrementCreated();
-        return response;
+
+        Span span = tracer.spanBuilder("service.create")
+                .startSpan();
+
+        span.setAttribute("service.name", request.name());
+
+        try (var scope = span.makeCurrent()) {
+
+            CitizenService service = new CitizenService(request.name(), request.description());
+
+            ServiceResponse response = ServiceResponse.from(repository.save(service));
+
+            metrics.incrementCreated();
+
+            return response;
+
+        } catch (Exception e) {
+
+            span.recordException(e);
+            span.setStatus(StatusCode.ERROR);
+
+            throw e;
+
+        } finally {
+            span.end();
+        }
     }
 
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")

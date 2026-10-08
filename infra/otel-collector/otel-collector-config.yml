@@ -1,0 +1,56 @@
+# ============================================================
+# OpenTelemetry Collector - configuração (distribuição core)
+# ============================================================
+# Fluxo de traces:
+#
+#   citizen-services (Java Agent)
+#       │  OTLP HTTP/protobuf
+#       ▼
+#   otel-collector :4318  (receiver otlp/http)
+#       │  OTLP gRPC
+#       ▼
+#   jaeger :4317          (exporter otlp)
+#
+# A distribuição "core" (otel/opentelemetry-collector) já inclui
+# o receiver otlp, o processor batch e o exporter otlp — não é
+# necessária a distribuição "contrib".
+
+receivers:
+  # Recebe os traces enviados pela aplicação via OTLP.
+  # A aplicação usa http/protobuf, então habilitamos o protocolo http.
+  # Explicitamos o endpoint em 0.0.0.0 para aceitar conexões de outros
+  # containers na rede do Docker Compose (e não apenas localhost).
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  # Agrupa os spans em lotes antes de exportar, reduzindo o número
+  # de requisições para o backend (Jaeger).
+  batch: {}
+
+exporters:
+  # Encaminha os traces para o Jaeger via OTLP gRPC.
+  #
+  # O antigo exporter "jaeger" foi removido do Collector; a forma
+  # suportada atualmente é enviar OTLP para o Jaeger, que aceita
+  # OTLP nativamente (gRPC na 4317, HTTP na 4318).
+  #
+  # Na versão 0.162.0 o componente gRPC chama-se "otlp_grpc"
+  # ("otlp" virou alias depreciado). Usamos o nome atual.
+  # tls.insecure: true porque a comunicação é interna, sem TLS.
+  otlp_grpc/jaeger:
+    endpoint: jaeger:4317
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    traces:
+      receivers:
+        - otlp
+      processors:
+        - batch
+      exporters:
+        - otlp_grpc/jaeger

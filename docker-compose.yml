@@ -9,11 +9,13 @@ services:
       DB_URL: jdbc:postgresql://postgres:5432/citizenservices
       DB_USERNAME: ${POSTGRES_USER:-citizen}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-citizen}
-      # OpenTelemetry (tracing via Java Agent -> OTLP -> Jaeger).
-      # O endpoint usa o nome do serviço Docker "jaeger" (NUNCA localhost),
-      # pois a app roda em container na mesma rede do compose.
+      # OpenTelemetry (tracing via Java Agent -> OTLP -> Collector -> Jaeger).
+      # O endpoint usa o nome do serviço Docker "otel-collector" (NUNCA
+      # localhost), pois a app roda em container na mesma rede do compose.
+      # A aplicação NÃO envia mais traces diretamente para o Jaeger: agora
+      # eles passam pelo OpenTelemetry Collector.
       OTEL_SERVICE_NAME: citizen-services
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
       OTEL_TRACES_EXPORTER: otlp
       # Nesta primeira etapa focamos apenas em traces.
@@ -29,7 +31,7 @@ services:
         condition: service_healthy
       logstash:
         condition: service_healthy
-      jaeger:
+      otel-collector:
         condition: service_started
 
   postgres:
@@ -76,6 +78,20 @@ services:
     depends_on:
       - prometheus
 
+  otel-collector:
+    image: otel/opentelemetry-collector:0.162.0
+    profiles:
+      - infra
+    command: ["--config=/etc/otel-collector-config.yml"]
+    volumes:
+      - ./infra/otel-collector/otel-collector-config.yml:/etc/otel-collector-config.yml:ro
+    expose:
+      # Porta OTLP HTTP usada internamente pela app (não precisa publicar no host).
+      - "4318"
+    depends_on:
+      jaeger:
+        condition: service_started
+
   jaeger:
     image: jaegertracing/all-in-one:1.76.0
     profiles:
@@ -85,8 +101,8 @@ services:
       COLLECTOR_OTLP_ENABLED: "true"
     ports:
       - "16686:16686"   # Jaeger UI
-      - "4318:4318"     # OTLP HTTP (usado pela app via OTEL_EXPORTER_OTLP_ENDPOINT)
-      - "4317:4317"     # OTLP gRPC (exposto para uso opcional)
+      - "4318:4318"     # OTLP HTTP (compatibilidade / uso opcional)
+      - "4317:4317"     # OTLP gRPC (usado pelo otel-collector como destino)
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.17.4
